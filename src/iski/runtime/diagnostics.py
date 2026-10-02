@@ -69,7 +69,7 @@ def tick_metrics(F_ext, gws_mask, gate_frac: float, graph, S, X) -> dict:
     """Расширенный лог тика (readout, не входит в критерии V1).
 
     gate_frac, mean_F_ext, mask_frac, ||W_eff||_F, ||w_minus||_F, mean_g,
-    h_norm = H/log(N*K), node_spread = std_i mean_K|X_i|.
+    mean_mu, mean_theta, h_norm = H/log(N*K), node_spread = std_i mean_K|X_i|.
     """
     X_arr = np.asarray(X, dtype=float)
     size = X_arr.size
@@ -88,6 +88,8 @@ def tick_metrics(F_ext, gws_mask, gate_frac: float, graph, S, X) -> dict:
         "w_fro": float(np.linalg.norm(graph.w_eff())),
         "wm_fro": float(np.linalg.norm(graph.w_minus)),
         "mean_g": float(np.mean(np.asarray(S, dtype=float)[:, 2])),
+        "mean_mu": float(np.mean(np.asarray(S, dtype=float)[:, 0])),
+        "mean_theta": float(np.mean(np.asarray(S, dtype=float)[:, 1])),
         "h_norm": h_norm,
         "node_spread": float(np.std(np.abs(X_arr).mean(axis=-1))),
     }

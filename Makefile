@@ -13,7 +13,7 @@ lint:
 >$(PYTHON) -m ruff format --check src tests
 
 run-m0:
->$(PYTHON) experiments/m0/run_m0.py --fast || cmd /c exit 0
+>$(PYTHON) experiments/m0/run_m0.py || cmd /c exit 0
 
 archive:
 >tar -czf iski-m0-v3.0.tar.gz --exclude=.venv --exclude=__pycache__ --exclude=.git --exclude=iski-m0-v3.0.tar.gz .

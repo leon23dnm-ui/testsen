@@ -8,7 +8,7 @@ import run_m0
 
 
 def _graph():
-    cfg = run_m0.make_cfg(ROOT, fast=True)
+    cfg = run_m0.make_cfg(ROOT)
     pipeline = run_m0.bootstrap(cfg)
     return cfg, pipeline.state.graph
 

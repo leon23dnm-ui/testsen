@@ -21,7 +21,7 @@ from iski.runtime.pipeline import Pipeline  # noqa: E402
 WORDS = ["one", "two", "three", "four"]
 
 
-def make_cfg(root: Path, fast: bool) -> types.SimpleNamespace:
+def make_cfg(root: Path) -> types.SimpleNamespace:
     with open(root / "config" / "model.yaml", encoding="utf-8") as f:
         model = yaml.safe_load(f)
     with open(root / "config" / "runtime.yaml", encoding="utf-8") as f:
@@ -31,12 +31,7 @@ def make_cfg(root: Path, fast: bool) -> types.SimpleNamespace:
     with open(root / "config" / "experiments" / "m0.yaml", encoding="utf-8") as f:
         experiment = yaml.safe_load(f)
 
-    cfg = types.SimpleNamespace(**model, **runtime, **bootstrap, **experiment)
-    if fast:
-        cfg.warm_ticks = 10
-        cfg.auto_ticks = 10
-        cfg.T_maint = 5
-    return cfg
+    return types.SimpleNamespace(**model, **runtime, **bootstrap, **experiment)
 
 
 DIAG_KEYS = (
@@ -52,7 +47,7 @@ DIAG_KEYS = (
     "mean_g",
 )
 
-LOG_KEYS = DIAG_KEYS + ("wm_fro", "h_norm", "node_spread")
+LOG_KEYS = DIAG_KEYS + ("wm_fro", "h_norm", "node_spread", "mean_mu", "mean_theta")
 
 OBS_KEYS = ("h_norm", "node_spread", "w_fro", "wm_fro", "mask_frac", "gate_frac", "s_ed")
 
@@ -138,6 +133,20 @@ def run_combo(
         ]
         diag[k] = float(np.mean(vals)) if vals else float("nan")
 
+    # сводка петли гомеостаза: g_end, mu_end, theta_end, w_row, g*w_row
+    last_m = logged[-1]
+    graph = pipeline.state.graph
+    W = np.zeros((cfg.N, cfg.N))
+    W[graph.edge_index[0], graph.edge_index[1]] += graph.w_eff()
+    w_row = float(W.sum(axis=1).mean())
+    homeo = {
+        "g_end": float(last_m["mean_g"]),
+        "mu_end": float(last_m["mean_mu"]),
+        "theta_end": float(last_m["mean_theta"]),
+        "w_row": w_row,
+        "gw_row": float(last_m["mean_g"]) * w_row,
+    }
+
     return {
         "warm_ok": warm_ok,
         "activity_band": activity_band,
@@ -148,16 +157,16 @@ def run_combo(
         "pass": warm_ok and activity_band and entropy_band and rho_stable and no_recovery and nontrivial,
         "diag": diag,
         "log": list(pipeline.log),
+        "homeo": homeo,
     }
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--fast", action="store_true", help="reduced ticks for CI")
-    args = parser.parse_args()
+    parser.parse_args()
 
     root = Path(__file__).resolve().parents[2]
-    cfg = make_cfg(root, args.fast)
+    cfg = make_cfg(root)
 
     logs_dir = root / "experiments" / "m0" / "logs"
     plots_dir = root / "experiments" / "m0" / "plots"
@@ -165,7 +174,6 @@ def main():
     plots_dir.mkdir(parents=True, exist_ok=True)
 
     rows = []
-    found = False
     for eta_plast in cfg.sweep["eta_plast"]:
         for Lambda in cfg.sweep["Lambda"]:
             for eta_g in cfg.sweep["eta_g"]:
@@ -173,16 +181,9 @@ def main():
                 result = run_combo(pipeline, cfg, eta_plast, Lambda, eta_g)
                 tag = f"eta{eta_plast}_L{Lambda}_etag{eta_g}"
                 _write_log(logs_dir / f"{tag}.csv", result["log"])
-                if not args.fast:
-                    _plot_traj(plots_dir / f"{tag}.png", result["log"], tag)
+                _plot_traj(plots_dir / f"{tag}.png", result["log"], tag)
                 rows.append((eta_plast, Lambda, eta_g, result))
-                if result["pass"]:
-                    found = True
-                    break
-            if found:
-                break
-        if found:
-            break
+    found = any(r["pass"] for _, _, _, r in rows)
 
     verdict = "НАЙДЕН" if found else "НЕ НАЙДЕН"
 
@@ -205,20 +206,42 @@ def main():
         cells = [combo] + [f"{r['diag'][k]:.4f}" for k in DIAG_KEYS]
         diag_lines.append("| " + " | ".join(cells) + " |")
 
-    if not args.fast:
-        obs_lines = [
-            "",
-            "## Наблюдения (диагностика, среднее по последним 100 тикам)",
-            "",
-            "| combo | " + " | ".join(OBS_KEYS) + " |",
-            "|-------|" + "|".join(["---"] * len(OBS_KEYS)) + "|",
+    obs_lines = [
+        "",
+        "## Наблюдения (диагностика, среднее по последним 100 тикам)",
+        "",
+        "| combo | " + " | ".join(OBS_KEYS) + " |",
+        "|-------|" + "|".join(["---"] * len(OBS_KEYS)) + "|",
+    ]
+    for eta_plast, Lambda, eta_g, r in rows:
+        combo = f"eta={eta_plast}, Lambda={Lambda}, eta_g={eta_g}"
+        obs = _tail_stats(r["log"], OBS_KEYS)
+        cells = [combo] + [f"{obs[k]:.4f}" for k in OBS_KEYS]
+        obs_lines.append("| " + " | ".join(cells) + " |")
+    diag_lines += obs_lines
+
+    homeo_lines = [
+        "",
+        "## Петля гомеостаза (конец прогона)",
+        "",
+        "| combo | g_end | mu_end | theta_end | w_row | g*w_row | loop |",
+        "|-------|---|---|---|---|---|---|",
+    ]
+    for eta_plast, Lambda, eta_g, r in rows:
+        combo = f"eta={eta_plast}, Lambda={Lambda}, eta_g={eta_g}"
+        h = r["homeo"]
+        loop = "closed" if h["g_end"] >= 2.0 else "open"
+        cells = [
+            combo,
+            f"{h['g_end']:.4f}",
+            f"{h['mu_end']:.4f}",
+            f"{h['theta_end']:.4f}",
+            f"{h['w_row']:.4f}",
+            f"{h['gw_row']:.4f}",
+            loop,
         ]
-        for eta_plast, Lambda, eta_g, r in rows:
-            combo = f"eta={eta_plast}, Lambda={Lambda}, eta_g={eta_g}"
-            obs = _tail_stats(r["log"], OBS_KEYS)
-            cells = [combo] + [f"{obs[k]:.4f}" for k in OBS_KEYS]
-            obs_lines.append("| " + " | ".join(cells) + " |")
-        diag_lines += obs_lines
+        homeo_lines.append("| " + " | ".join(cells) + " |")
+    diag_lines += homeo_lines
 
     report_path = root / "REPORT.md"
     template = (root / "experiments" / "m0" / "REPORT.template.md").read_text(encoding="utf-8")
