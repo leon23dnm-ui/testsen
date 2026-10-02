@@ -42,6 +42,7 @@ def test_canonical_values():
     assert model["g_max"] == 5.0
     assert bootstrap["p0"] == 0.5
     assert bootstrap["w_init_max"] == 0.5
+    assert bootstrap["w_minus_init_max"] == 0.15
     assert bootstrap["theta_ed_warm"] == 0.15
     assert bootstrap["H_max"] == 2.5
     assert bootstrap["rho_max"] == 1.5

@@ -7,7 +7,6 @@ import types
 from pathlib import Path
 
 import numpy as np
-import torch
 import yaml
 
 import matplotlib
@@ -15,15 +14,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from iski.core.state import OmegaState
-from iski.dynamics.homeostasis import init_S
-from iski.dynamics.noise import make_rng
 from iski.encoders.hash_text import encode_text
-from iski.graph.topology import GraphCOO
-from iski.prediction.buffer import RingBufferH
-from iski.prediction.heads import PredHead
-from iski.runtime.pipeline import Pipeline
-from iski.runtime.scheduler import Clocks
+from iski.runtime.bootstrap import bootstrap  # noqa: E402
+from iski.runtime.pipeline import Pipeline  # noqa: E402
 
 WORDS = ["one", "two", "three", "four"]
 
@@ -44,42 +37,6 @@ def make_cfg(root: Path, fast: bool) -> types.SimpleNamespace:
         cfg.auto_ticks = 10
         cfg.T_maint = 5
     return cfg
-
-
-def bootstrap(cfg: types.SimpleNamespace) -> Pipeline:
-    torch.manual_seed(cfg.seeds["boot"])
-    rng = np.random.default_rng(cfg.seeds["boot"])
-    N, D, K = cfg.N, cfg.D, cfg.K
-
-    E = rng.standard_normal((N, D))
-    norms = np.linalg.norm(E, axis=1, keepdims=True)
-    norms[norms == 0] = 1.0
-    E = E / norms
-
-    src, dst = [], []
-    for i in range(N):
-        for j in range(N):
-            if i == j:
-                continue
-            if rng.random() < cfg.p0:
-                src.append(i)
-                dst.append(j)
-    M = len(src)
-    edge_index = np.array([src, dst], dtype=int) if M else np.empty((2, 0), dtype=int)
-    w_plus = rng.uniform(0.0, cfg.w_init_max, M) if M else np.zeros(0)
-    w_minus = np.zeros(M)
-    delays = rng.integers(0, cfg.Dmax, M) if M else np.zeros(0, dtype=int)
-    q_elig = np.zeros(M)
-    graph = GraphCOO(edge_index, w_plus, w_minus, delays, q_elig)
-
-    X = np.zeros((N, K))
-    S = init_S(N, cfg.mu_star)
-    state = OmegaState(cfg, E, X, graph, S, store=[], tick=0)
-    clocks = Clocks(cfg.clocks["m"], cfg.clocks["s"], cfg.clocks["q"])
-    head = PredHead(N, K, cfg.H_head)
-    hbuf = RingBufferH(cfg.tau1 + 2)
-    rng_noise = make_rng(cfg.seeds["noise"])
-    return Pipeline(state, clocks, cfg, head, hbuf, rng_noise)
 
 
 DIAG_KEYS = (

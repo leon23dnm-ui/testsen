@@ -22,7 +22,9 @@ def test_bootstrap_weights_bounded_by_w_init_max():
     cfg, graph = _graph()
     assert graph.w_plus.max() <= cfg.w_init_max
     assert (graph.w_plus >= 0.0).all()
-    assert (graph.w_minus == 0.0).all()
+    assert graph.w_minus.max() <= cfg.w_minus_init_max
+    assert (graph.w_minus >= 0.0).all()
+    assert (graph.w_minus > 0.0).any()
 
 
 def test_bootstrap_delays_in_range():
