@@ -1,14 +1,7 @@
-# Python cache and build artifacts
+# Compiled and build artifacts
 __pycache__/
 *.pyc
-*.pyo
+dist/
+
+# Python package metadata
 *.egg-info/
-
-# Environment variables
-.env
-.env.local
-*.env.*
-
-# Logs (including experiment logs)
-logs/
-*.log

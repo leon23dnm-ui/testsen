@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: iski
+Version: 0.1.0
+Summary: ISKI M0 v3.0 prototype skeleton
+Requires-Python: >=3.10
+Requires-Dist: torch>=2.0
+Requires-Dist: numpy
+Requires-Dist: pyyaml
+Requires-Dist: matplotlib
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
