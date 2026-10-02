@@ -7,7 +7,13 @@ import types
 from pathlib import Path
 
 import numpy as np
+import torch
 import yaml
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
 
 from iski.core.state import OmegaState
 from iski.dynamics.homeostasis import init_S
@@ -41,6 +47,7 @@ def make_cfg(root: Path, fast: bool) -> types.SimpleNamespace:
 
 
 def bootstrap(cfg: types.SimpleNamespace) -> Pipeline:
+    torch.manual_seed(cfg.seeds["boot"])
     rng = np.random.default_rng(cfg.seeds["boot"])
     N, D, K = cfg.N, cfg.D, cfg.K
 
@@ -87,6 +94,47 @@ DIAG_KEYS = (
     "w_fro",
     "mean_g",
 )
+
+LOG_KEYS = DIAG_KEYS + ("wm_fro", "h_norm", "node_spread")
+
+OBS_KEYS = ("h_norm", "node_spread", "w_fro", "wm_fro", "mask_frac", "gate_frac", "s_ed")
+
+
+def _write_log(path: Path, log) -> None:
+    keys = ["t"] + list(LOG_KEYS) + ["n_viol"]
+    lines = [",".join(keys)]
+    for t, m, nv in log:
+        row = [str(t)] + [f"{m.get(k, float('nan')):.6g}" for k in LOG_KEYS] + [str(nv)]
+        lines.append(",".join(row))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _plot_traj(path: Path, log, tag: str) -> None:
+    series = ("w_fro", "wm_fro", "mask_frac", "gate_frac", "s_ed", "h_norm", "node_spread")
+    ts = [t for t, _, _ in log]
+    fig, axes = plt.subplots(len(series), 1, figsize=(8, 2.2 * len(series)), sharex=True)
+    for ax, k in zip(axes, series, strict=True):
+        ax.plot(ts, [m.get(k, float("nan")) for _, m, _ in log])
+        ax.set_ylabel(k)
+        ax.grid(True, alpha=0.3)
+    axes[0].set_title(tag)
+    axes[-1].set_xlabel("t")
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+
+
+def _tail_stats(log, keys, window: int = 100) -> dict:
+    tail = [m for _, m, _ in log][-window:]
+    out = {}
+    for k in keys:
+        vals = [
+            m[k]
+            for m in tail
+            if k in m and not (isinstance(m[k], float) and np.isnan(m[k]))
+        ]
+        out[k] = float(np.mean(vals)) if vals else float("nan")
+    return out
 
 
 def run_combo(
@@ -142,6 +190,7 @@ def run_combo(
         "nontrivial": nontrivial,
         "pass": warm_ok and activity_band and entropy_band and rho_stable and no_recovery and nontrivial,
         "diag": diag,
+        "log": list(pipeline.log),
     }
 
 
@@ -153,6 +202,11 @@ def main():
     root = Path(__file__).resolve().parents[2]
     cfg = make_cfg(root, args.fast)
 
+    logs_dir = root / "experiments" / "m0" / "logs"
+    plots_dir = root / "experiments" / "m0" / "plots"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir.mkdir(parents=True, exist_ok=True)
+
     rows = []
     found = False
     for eta_plast in cfg.sweep["eta_plast"]:
@@ -160,6 +214,10 @@ def main():
             for eta_g in cfg.sweep["eta_g"]:
                 pipeline = bootstrap(cfg)
                 result = run_combo(pipeline, cfg, eta_plast, Lambda, eta_g)
+                tag = f"eta{eta_plast}_L{Lambda}_etag{eta_g}"
+                _write_log(logs_dir / f"{tag}.csv", result["log"])
+                if not args.fast:
+                    _plot_traj(plots_dir / f"{tag}.png", result["log"], tag)
                 rows.append((eta_plast, Lambda, eta_g, result))
                 if result["pass"]:
                     found = True
@@ -189,6 +247,21 @@ def main():
         combo = f"eta={eta_plast}, Lambda={Lambda}, eta_g={eta_g}"
         cells = [combo] + [f"{r['diag'][k]:.4f}" for k in DIAG_KEYS]
         diag_lines.append("| " + " | ".join(cells) + " |")
+
+    if not args.fast:
+        obs_lines = [
+            "",
+            "## Наблюдения (диагностика, среднее по последним 100 тикам)",
+            "",
+            "| combo | " + " | ".join(OBS_KEYS) + " |",
+            "|-------|" + "|".join(["---"] * len(OBS_KEYS)) + "|",
+        ]
+        for eta_plast, Lambda, eta_g, r in rows:
+            combo = f"eta={eta_plast}, Lambda={Lambda}, eta_g={eta_g}"
+            obs = _tail_stats(r["log"], OBS_KEYS)
+            cells = [combo] + [f"{obs[k]:.4f}" for k in OBS_KEYS]
+            obs_lines.append("| " + " | ".join(cells) + " |")
+        diag_lines += obs_lines
 
     report_path = root / "REPORT.md"
     template = (root / "experiments" / "m0" / "REPORT.template.md").read_text(encoding="utf-8")

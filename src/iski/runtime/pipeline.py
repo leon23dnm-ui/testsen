@@ -245,6 +245,7 @@ class Pipeline:
                 gate_fraction(self.state, graph, getattr(self.cfg, "gate_thr", 0.0)),
                 cand.graph,
                 cand.S,
+                cand.X,
             )
         )
 
