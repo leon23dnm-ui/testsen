@@ -8,6 +8,7 @@ import run_m0
 def test_run_m0_creates_report(monkeypatch):
     root = Path(__file__).resolve().parents[2]
     report = root / "REPORT.md"
+    backup = report.read_bytes() if report.exists() else None
 
     orig = run_m0.make_cfg
 
@@ -28,3 +29,6 @@ def test_run_m0_creates_report(monkeypatch):
 
     assert report.exists()
     assert "Вердикт" in report.read_text(encoding="utf-8")
+
+    if backup is not None:
+        report.write_bytes(backup)
