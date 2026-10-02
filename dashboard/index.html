@@ -22,63 +22,64 @@
 </head>
 <body>
 <h1>🛰 ISKI M0 v3.0 — Quality Dashboard</h1>
-<div class="muted">Сгенерирован: 2026-10-02 19:47 UTC · Python <code>python -m build_dashboard.py</code></div>
+<div class="muted">Сгенерирован: 2026-10-02 20:22 UTC · Python <code>python -m build_dashboard.py</code></div>
 <div class="cards">
-  <div class="card"><div class="v ok">76</div><div class="l">Тестов: passed 76 / failed 0 / skipped 0</div></div>
-  <div class="card"><div class="v">14.5s</div><div class="l">Время прогона</div></div>
-  <div class="card"><div class="v ok">91.3%</div><div class="l">Покрытие кода (64 строк не покрыто)</div></div>
+  <div class="card"><div class="v ok">83</div><div class="l">Тестов: passed 83 / failed 0 / skipped 0</div></div>
+  <div class="card"><div class="v">11.9s</div><div class="l">Время прогона</div></div>
+  <div class="card"><div class="v ok">94.7%</div><div class="l">Покрытие кода (40 строк не покрыто)</div></div>
   <div class="card"><div class="v">Ruff lint: <span class="ok">OK</span></div><div class="l">Формат: OK</div></div>
 </div>
 <h2>Покрытие по модулям</h2>
 <table>
 <tr><th>Модуль</th><th>Строк</th><th>Не покрыто</th><th>Покрытие</th></tr>
-<tr><td><code>io/envelope.py</code></td><td>9</td><td>9</td><td><span class='bar'><div style='width:0%'></div></span> 0.0%</td></tr>
-<tr><td><code>runtime/scheduler.py</code></td><td>16</td><td>4</td><td><span class='bar'><div style='width:75%'></div></span> 75.0%</td></tr>
-<tr><td><code>core/state.py</code></td><td>77</td><td>18</td><td><span class='bar'><div style='width:77%'></div></span> 76.6%</td></tr>
-<tr><td><code>runtime/pipeline.py</code></td><td>172</td><td>23</td><td><span class='bar'><div style='width:87%'></div></span> 86.6%</td></tr>
-<tr><td><code>io/buffer.py</code></td><td>9</td><td>1</td><td><span class='bar'><div style='width:89%'></div></span> 88.9%</td></tr>
-<tr><td><code>core/kernels.py</code></td><td>12</td><td>1</td><td><span class='bar'><div style='width:92%'></div></span> 91.7%</td></tr>
-<tr><td><code>core/operators.py</code></td><td>24</td><td>2</td><td><span class='bar'><div style='width:92%'></div></span> 91.7%</td></tr>
-<tr><td><code>memory/store.py</code></td><td>18</td><td>1</td><td><span class='bar'><div style='width:94%'></div></span> 94.4%</td></tr>
-<tr><td><code>graph/topology.py</code></td><td>24</td><td>1</td><td><span class='bar'><div style='width:96%'></div></span> 95.8%</td></tr>
-<tr><td><code>safety/invariants.py</code></td><td>26</td><td>1</td><td><span class='bar'><div style='width:96%'></div></span> 96.2%</td></tr>
-<tr><td><code>runtime/diagnostics.py</code></td><td>53</td><td>2</td><td><span class='bar'><div style='width:96%'></div></span> 96.2%</td></tr>
-<tr><td><code>core/delta.py</code></td><td>28</td><td>1</td><td><span class='bar'><div style='width:96%'></div></span> 96.4%</td></tr>
-<tr><td><code>__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>attention/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>attention/attention.py</code></td><td>4</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>attention/gws.py</code></td><td>24</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>attention/salience.py</code></td><td>5</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>core/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>core/snapshots.py</code></td><td>5</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>dynamics/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>dynamics/homeostasis.py</code></td><td>21</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>dynamics/noise.py</code></td><td>8</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>dynamics/propagation.py</code></td><td>16</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>dynamics/update.py</code></td><td>13</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>encoders/hash_text.py</code></td><td>12</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>graph/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>io/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>learning/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>learning/eligibility.py</code></td><td>19</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>learning/plasticity.py</code></td><td>9</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>memory/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>memory/forgetting.py</code></td><td>4</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>memory/item.py</code></td><td>15</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>memory/maintenance.py</code></td><td>2</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>memory/modes.py</code></td><td>13</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>prediction/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>prediction/buffer.py</code></td><td>15</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>prediction/heads.py</code></td><td>27</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>runtime/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>runtime/bootstrap.py</code></td><td>47</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>runtime/candidate.py</code></td><td>8</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>safety/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\io\envelope.py</code></td><td>9</td><td>9</td><td><span class='bar'><div style='width:0%'></div></span> 0.0%</td></tr>
+<tr><td><code>src\iski\core\state.py</code></td><td>77</td><td>14</td><td><span class='bar'><div style='width:82%'></div></span> 81.8%</td></tr>
+<tr><td><code>src\iski\runtime\scheduler.py</code></td><td>16</td><td>2</td><td><span class='bar'><div style='width:88%'></div></span> 87.5%</td></tr>
+<tr><td><code>src\iski\io\buffer.py</code></td><td>9</td><td>1</td><td><span class='bar'><div style='width:89%'></div></span> 88.9%</td></tr>
+<tr><td><code>src\iski\core\kernels.py</code></td><td>12</td><td>1</td><td><span class='bar'><div style='width:92%'></div></span> 91.7%</td></tr>
+<tr><td><code>src\iski\core\operators.py</code></td><td>24</td><td>2</td><td><span class='bar'><div style='width:92%'></div></span> 91.7%</td></tr>
+<tr><td><code>src\iski\memory\store.py</code></td><td>18</td><td>1</td><td><span class='bar'><div style='width:94%'></div></span> 94.4%</td></tr>
+<tr><td><code>src\iski\graph\topology.py</code></td><td>24</td><td>1</td><td><span class='bar'><div style='width:96%'></div></span> 95.8%</td></tr>
+<tr><td><code>src\iski\safety\invariants.py</code></td><td>26</td><td>1</td><td><span class='bar'><div style='width:96%'></div></span> 96.2%</td></tr>
+<tr><td><code>src\iski\runtime\diagnostics.py</code></td><td>53</td><td>2</td><td><span class='bar'><div style='width:96%'></div></span> 96.2%</td></tr>
+<tr><td><code>src\iski\core\delta.py</code></td><td>28</td><td>1</td><td><span class='bar'><div style='width:96%'></div></span> 96.4%</td></tr>
+<tr><td><code>src\iski\runtime\pipeline.py</code></td><td>181</td><td>5</td><td><span class='bar'><div style='width:97%'></div></span> 97.2%</td></tr>
+<tr><td><code>src\iski\__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\attention\__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\attention\attention.py</code></td><td>4</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\attention\gws.py</code></td><td>24</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\attention\salience.py</code></td><td>5</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\core\__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\core\snapshots.py</code></td><td>5</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\dynamics\__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\dynamics\homeostasis.py</code></td><td>21</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\dynamics\noise.py</code></td><td>8</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\dynamics\propagation.py</code></td><td>16</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\dynamics\update.py</code></td><td>13</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\encoders\hash_text.py</code></td><td>12</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\graph\__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\io\__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\learning\__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\learning\eligibility.py</code></td><td>19</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\learning\plasticity.py</code></td><td>9</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\memory\__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\memory\forgetting.py</code></td><td>4</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\memory\formation.py</code></td><td>17</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\memory\item.py</code></td><td>15</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\memory\maintenance.py</code></td><td>2</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\memory\modes.py</code></td><td>13</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\prediction\__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\prediction\buffer.py</code></td><td>15</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\prediction\heads.py</code></td><td>27</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\runtime\__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\runtime\bootstrap.py</code></td><td>47</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\runtime\candidate.py</code></td><td>8</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>src\iski\safety\__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
 </table>
 <h2>Тесты по файлам</h2>
 <table>
 <tr><th>Файл</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Время, с</th></tr>
-<tr><td><code>tests</code></td><td>76</td><td class="">0</td><td>0</td><td>9.49</td></tr>
+<tr><td><code>tests</code></td><td>83</td><td class="">0</td><td>0</td><td>5.67</td></tr>
 </table>
 <footer class="muted">✅ Все проверки зелёные: тесты пройдены, линтер чистый.</footer>
 </body>
