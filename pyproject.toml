@@ -20,5 +20,11 @@ dev = [
     "ruff",
 ]
 
+[tool.pytest.ini_options]
+# Внешний плагин libtmux (установлен в окружении, не является зависимостью проекта)
+# несовместим с pytest>=9: его conftest-хук применяет marks к фикстурам, что приводит
+# к ошибке сбора "Marks cannot be applied to fixtures". Отключаем его автозагрузку.
+addopts = "-p no:libtmux"
+
 [tool.setuptools.packages.find]
 where = ["src"]
