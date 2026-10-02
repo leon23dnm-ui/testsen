@@ -2,11 +2,22 @@
 .tools/
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
 build/
 dist/
-*.egg-info/
+
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# Logs (including experiment logs)
+logs/
+*.log
+
 make_dl.zip
 iski-m0-v3.0.tar.gz
 iski-m0-v3.0.tar.gz.sha256

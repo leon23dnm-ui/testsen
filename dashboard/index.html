@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>ISKI M0 — Dashboard</title>
+<style>
+ body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; background:#0f1117; color:#e6e6e6; }
+ h1 { font-size:1.5rem; } .muted { color:#8b93a7; font-size:.85rem; }
+ .cards { display:flex; gap:1rem; flex-wrap:wrap; margin:1.2rem 0; }
+ .card { background:#1a1f2e; border-radius:10px; padding:1rem 1.4rem; min-width:150px; }
+ .card .v { font-size:1.8rem; font-weight:700; } .card .l { color:#8b93a7; font-size:.8rem; }
+ .ok { color:#4ade80; } .bad { color:#f87171; }
+ table { border-collapse:collapse; width:100%; margin-top:1rem; background:#1a1f2e; border-radius:10px; overflow:hidden; }
+ th, td { padding:.5rem .9rem; text-align:left; font-size:.88rem; border-bottom:1px solid #262c3d; }
+ th { background:#232a3b; color:#8b93a7; text-transform:uppercase; font-size:.75rem; }
+ .bar { background:#262c3d; border-radius:4px; height:10px; width:220px; display:inline-block; vertical-align:middle; }
+ .bar > div { background:linear-gradient(90deg,#38bdf8,#4ade80); height:10px; border-radius:4px; }
+ .badge { padding:.15rem .5rem; border-radius:6px; font-size:.75rem; font-weight:600; }
+ .badge.pass { background:#14351f; color:#4ade80; } .badge.fail { background:#3b1a1a; color:#f87171; }
+ footer { margin-top:2rem; }
+</style>
+</head>
+<body>
+<h1>🛰 ISKI M0 v3.0 — Quality Dashboard</h1>
+<div class="muted">Сгенерирован: 2026-10-02 19:47 UTC · Python <code>python -m build_dashboard.py</code></div>
+<div class="cards">
+  <div class="card"><div class="v ok">76</div><div class="l">Тестов: passed 76 / failed 0 / skipped 0</div></div>
+  <div class="card"><div class="v">14.5s</div><div class="l">Время прогона</div></div>
+  <div class="card"><div class="v ok">91.3%</div><div class="l">Покрытие кода (64 строк не покрыто)</div></div>
+  <div class="card"><div class="v">Ruff lint: <span class="ok">OK</span></div><div class="l">Формат: OK</div></div>
+</div>
+<h2>Покрытие по модулям</h2>
+<table>
+<tr><th>Модуль</th><th>Строк</th><th>Не покрыто</th><th>Покрытие</th></tr>
+<tr><td><code>io/envelope.py</code></td><td>9</td><td>9</td><td><span class='bar'><div style='width:0%'></div></span> 0.0%</td></tr>
+<tr><td><code>runtime/scheduler.py</code></td><td>16</td><td>4</td><td><span class='bar'><div style='width:75%'></div></span> 75.0%</td></tr>
+<tr><td><code>core/state.py</code></td><td>77</td><td>18</td><td><span class='bar'><div style='width:77%'></div></span> 76.6%</td></tr>
+<tr><td><code>runtime/pipeline.py</code></td><td>172</td><td>23</td><td><span class='bar'><div style='width:87%'></div></span> 86.6%</td></tr>
+<tr><td><code>io/buffer.py</code></td><td>9</td><td>1</td><td><span class='bar'><div style='width:89%'></div></span> 88.9%</td></tr>
+<tr><td><code>core/kernels.py</code></td><td>12</td><td>1</td><td><span class='bar'><div style='width:92%'></div></span> 91.7%</td></tr>
+<tr><td><code>core/operators.py</code></td><td>24</td><td>2</td><td><span class='bar'><div style='width:92%'></div></span> 91.7%</td></tr>
+<tr><td><code>memory/store.py</code></td><td>18</td><td>1</td><td><span class='bar'><div style='width:94%'></div></span> 94.4%</td></tr>
+<tr><td><code>graph/topology.py</code></td><td>24</td><td>1</td><td><span class='bar'><div style='width:96%'></div></span> 95.8%</td></tr>
+<tr><td><code>safety/invariants.py</code></td><td>26</td><td>1</td><td><span class='bar'><div style='width:96%'></div></span> 96.2%</td></tr>
+<tr><td><code>runtime/diagnostics.py</code></td><td>53</td><td>2</td><td><span class='bar'><div style='width:96%'></div></span> 96.2%</td></tr>
+<tr><td><code>core/delta.py</code></td><td>28</td><td>1</td><td><span class='bar'><div style='width:96%'></div></span> 96.4%</td></tr>
+<tr><td><code>__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>attention/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>attention/attention.py</code></td><td>4</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>attention/gws.py</code></td><td>24</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>attention/salience.py</code></td><td>5</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>core/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>core/snapshots.py</code></td><td>5</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>dynamics/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>dynamics/homeostasis.py</code></td><td>21</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>dynamics/noise.py</code></td><td>8</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>dynamics/propagation.py</code></td><td>16</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>dynamics/update.py</code></td><td>13</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>encoders/hash_text.py</code></td><td>12</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>graph/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>io/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>learning/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>learning/eligibility.py</code></td><td>19</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>learning/plasticity.py</code></td><td>9</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>memory/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>memory/forgetting.py</code></td><td>4</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>memory/item.py</code></td><td>15</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>memory/maintenance.py</code></td><td>2</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>memory/modes.py</code></td><td>13</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>prediction/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>prediction/buffer.py</code></td><td>15</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>prediction/heads.py</code></td><td>27</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>runtime/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>runtime/bootstrap.py</code></td><td>47</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>runtime/candidate.py</code></td><td>8</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+<tr><td><code>safety/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
+</table>
+<h2>Тесты по файлам</h2>
+<table>
+<tr><th>Файл</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Время, с</th></tr>
+<tr><td><code>tests</code></td><td>76</td><td class="">0</td><td>0</td><td>9.49</td></tr>
+</table>
+<footer class="muted">✅ Все проверки зелёные: тесты пройдены, линтер чистый.</footer>
+</body>
+</html>
