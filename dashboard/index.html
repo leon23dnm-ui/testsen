@@ -4,35 +4,144 @@
 <meta charset="utf-8">
 <title>ISKI M0 — Dashboard</title>
 <style>
- body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; background:#0f1117; color:#e6e6e6; }
- h1 { font-size:1.5rem; } .muted { color:#8b93a7; font-size:.85rem; }
+ body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background:#0f1117; color:#e6e6e6; }
+ .wrap { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+ h1 { font-size:1.5rem; } h2 { font-size:1.15rem; margin-top:2rem; } .muted { color:#8b93a7; font-size:.85rem; }
  .cards { display:flex; gap:1rem; flex-wrap:wrap; margin:1.2rem 0; }
  .card { background:#1a1f2e; border-radius:10px; padding:1rem 1.4rem; min-width:150px; }
  .card .v { font-size:1.8rem; font-weight:700; } .card .l { color:#8b93a7; font-size:.8rem; }
- .ok { color:#4ade80; } .bad { color:#f87171; }
+ .ok { color:#4ade80; } .bad { color:#f87171; } .warn { color:#fbbf24; }
  table { border-collapse:collapse; width:100%; margin-top:1rem; background:#1a1f2e; border-radius:10px; overflow:hidden; }
- th, td { padding:.5rem .9rem; text-align:left; font-size:.88rem; border-bottom:1px solid #262c3d; }
- th { background:#232a3b; color:#8b93a7; text-transform:uppercase; font-size:.75rem; }
+ th, td { padding:.5rem .9rem; text-align:left; font-size:.85rem; border-bottom:1px solid #262c3d; }
+ th { background:#232a3b; color:#8b93a7; text-transform:uppercase; font-size:.72rem; }
+ tr:hover td { background:#20273a; }
  .bar { background:#262c3d; border-radius:4px; height:10px; width:220px; display:inline-block; vertical-align:middle; }
  .bar > div { background:linear-gradient(90deg,#38bdf8,#4ade80); height:10px; border-radius:4px; }
  .badge { padding:.15rem .5rem; border-radius:6px; font-size:.75rem; font-weight:600; }
  .badge.pass { background:#14351f; color:#4ade80; } .badge.fail { background:#3b1a1a; color:#f87171; }
+ .badge.skip { background:#33301a; color:#fbbf24; }
+ .tabs { display:flex; gap:.4rem; margin:1.5rem 0 0; flex-wrap:wrap; }
+ .tab-btn { background:#1a1f2e; color:#8b93a7; border:none; padding:.55rem 1.1rem; border-radius:8px 8px 0 0; cursor:pointer; font-size:.9rem; }
+ .tab-btn.active { background:#232a3b; color:#e6e6e6; font-weight:600; }
+ .tab { display:none; } .tab.active { display:block; }
+ pre { background:#151a26; border:1px solid #262c3d; border-radius:8px; padding:.8rem; overflow-x:auto; font-size:.78rem; }
+ details { margin:.4rem 0; background:#1a1f2e; border-radius:8px; padding:.5rem .9rem; }
+ summary { cursor:pointer; font-size:.88rem; }
+ select { background:#232a3b; color:#e6e6e6; border:1px solid #262c3d; border-radius:6px; padding:.35rem .6rem; }
+ canvas { background:#151a26; border:1px solid #262c3d; border-radius:8px; width:100%; max-width:1100px; }
+ .kv { font-size:.85rem; } .kv code { color:#38bdf8; }
+ .scroll { overflow-x:auto; }
  footer { margin-top:2rem; }
 </style>
 </head>
-<body>
-<h1>🛰 ISKI M0 v3.0 — Quality Dashboard</h1>
-<div class="muted">Сгенерирован: 2026-10-02 20:05 UTC · Python <code>python -m build_dashboard.py</code></div>
+<body><div class="wrap">
+<h1>🛰 ISKI M0 v3.0 — Quality Dashboard (расширенный)</h1>
+<div class="muted">Сгенерирован: 2026-10-02 20:19 UTC · пересобрать: <code>python build_dashboard.py</code></div>
+
 <div class="cards">
-  <div class="card"><div class="v ok">76</div><div class="l">Тестов: passed 76 / failed 0 / skipped 0</div></div>
-  <div class="card"><div class="v">16.1s</div><div class="l">Время прогона</div></div>
-  <div class="card"><div class="v ok">91.3%</div><div class="l">Покрытие кода (64 строк не покрыто)</div></div>
-  <div class="card"><div class="v">Ruff lint: <span class="ok">OK</span></div><div class="l">Формат: OK</div></div>
+  <div class="card"><div class="v ok">76/76</div><div class="l">Тесты: passed 76 · failed 0 · errors 0 · skipped 0</div></div>
+  <div class="card"><div class="v">14.1s</div><div class="l">Время прогона pytest</div></div>
+  <div class="card"><div class="v ok">91.3%</div><div class="l">Покрытие (671/735 строк; не покрыто 64)</div></div>
+  <div class="card"><div class="v">OK / OK</div><div class="l">Ruff lint / формат</div></div>
+  <div class="card"><div class="v bad">НЕ НАЙДЕН</div><div class="l">Вердикт V1 (M0 falsification)</div></div>
+  <div class="card"><div class="v">26/26</div><div class="l">Задачи T закрыты (CHECKLIST)</div></div>
 </div>
-<h2>Покрытие по модулям</h2>
-<table>
-<tr><th>Модуль</th><th>Строк</th><th>Не покрыто</th><th>Покрытие</th></tr>
-<tr><td><code>io/envelope.py</code></td><td>9</td><td>9</td><td><span class='bar'><div style='width:0%'></div></span> 0.0%</td></tr>
+
+<div class="tabs">
+ <button class="tab-btn active" data-t="t-tests">Тесты и ошибки</button>
+ <button class="tab-btn" data-t="t-cov">Покрытие</button>
+ <button class="tab-btn" data-t="t-crit">Критерии V1</button>
+ <button class="tab-btn" data-t="t-exp">Эксперимент M0</button>
+ <button class="tab-btn" data-t="t-tasks">Задачи</button>
+</div>
+
+<div id="t-tests" class="tab active">
+ <h2>Падения тестов (0)</h2>
+ <p class="ok">✅ Падений нет — все тестовые кейсы зелёные.</p>
+ <h2>Тесты по файлам</h2>
+ <table><tr><th>Файл</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Время, с</th><th>Статус</th></tr><tr><td><code>tests</code></td><td>76</td><td class="">0</td><td>0</td><td>9.10</td><td><span class="badge pass">OK</span></td></tr></table>
+ <h2>Все тест-кейсы (76)</h2>
+ <div class="scroll"><table><tr><th>Файл</th><th>Тест</th><th>Статус</th><th>Время, с</th></tr><tr><td><code>tests</code></td><td>test_cache_seen_at_structural</td><td><span class="badge pass">passed</span></td><td>2.791</td></tr>
+<tr><td><code>tests</code></td><td>test_pipeline_order_log</td><td><span class="badge pass">passed</span></td><td>0.008</td></tr>
+<tr><td><code>tests</code></td><td>test_run_m0_fast_creates_report</td><td><span class="badge pass">passed</span></td><td>5.656</td></tr>
+<tr><td><code>tests</code></td><td>test_tick_determinism</td><td><span class="badge pass">passed</span></td><td>0.024</td></tr>
+<tr><td><code>tests</code></td><td>test_attention_sums_to_one</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_attention_monotonic_with_salience</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_bootstrap_creates_edges</td><td><span class="badge pass">passed</span></td><td>0.021</td></tr>
+<tr><td><code>tests</code></td><td>test_bootstrap_weights_bounded_by_w_init_max</td><td><span class="badge pass">passed</span></td><td>0.019</td></tr>
+<tr><td><code>tests</code></td><td>test_bootstrap_inhibitory_fraction</td><td><span class="badge pass">passed</span></td><td>0.018</td></tr>
+<tr><td><code>tests</code></td><td>test_bootstrap_delays_in_range</td><td><span class="badge pass">passed</span></td><td>0.018</td></tr>
+<tr><td><code>tests</code></td><td>test_bootstrap_no_self_loops</td><td><span class="badge pass">passed</span></td><td>0.019</td></tr>
+<tr><td><code>tests</code></td><td>test_buffer_h_eviction</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_assemble_applies_non_overlapping_deltas</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_assemble_conflict_raises</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_pipeline_fails_on_missing_key</td><td><span class="badge pass">passed</span></td><td>0.012</td></tr>
+<tr><td><code>tests</code></td><td>test_pipeline_accepts_full_cfg</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_operators_registry_valid</td><td><span class="badge pass">passed</span></td><td>0.014</td></tr>
+<tr><td><code>tests</code></td><td>test_runtime_clocks_valid</td><td><span class="badge pass">passed</span></td><td>0.005</td></tr>
+<tr><td><code>tests</code></td><td>test_model_config_loads</td><td><span class="badge pass">passed</span></td><td>0.010</td></tr>
+<tr><td><code>tests</code></td><td>test_canonical_values</td><td><span class="badge pass">passed</span></td><td>0.013</td></tr>
+<tr><td><code>tests</code></td><td>test_delta_is_frozen</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_merge_conflict_on_same_channel</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_merge_disjoint_channels_ok</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_delta_empty_by_default</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_entropy_bounds</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_s_ed_is_one_for_equal_e_in</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_rho_j_lower_bound</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_eligibility_coactivation_grows</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_eligibility_rest_decays</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_forget_decision_table[0.1-0.0-0.0-archive]</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_forget_decision_table[0.1-0.9-0.5-archive]</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_forget_decision_table[0.1-0.0-0.9-keep]</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_forget_decision_table[0.5-0.9-0.0-keep]</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_gws_empty_mask_returns_x</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_gws_alpha_sums_to_one</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_gws_broadcast_norm_bound</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_head_encode_predict_shapes</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_train_step_loss_decreases</td><td><span class="badge pass">passed</span></td><td>0.020</td></tr>
+<tr><td><code>tests</code></td><td>test_mu_converges_to_mean_activity</td><td><span class="badge pass">passed</span></td><td>0.022</td></tr>
+<tr><td><code>tests</code></td><td>test_g_grows_when_mu_below_target</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_g_bounded</td><td><span class="badge pass">passed</span></td><td>0.164</td></tr>
+<tr><td><code>tests</code></td><td>test_zero_input_holds_activity</td><td><span class="badge pass">passed</span></td><td>0.080</td></tr>
+<tr><td><code>tests</code></td><td>test_project_removes_violations</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_e_norms_bounded_after_project</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_pop_ready_empty_buffer</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_encoder_deterministic</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_encoder_norm_one</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_item_w_is_rho_4</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_item_clone_is_independent</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_kernel_identity_for_same_vector</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_kernel_decreases_with_distance</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_archive_sweep_respects_status_and_age</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_reuse_one_decreases_d</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_surprise_one_decreases_f</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_w_within_bounds</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_components_except_w_within_zero_one</td><td><span class="badge pass">passed</span></td><td>0.002</td></tr>
+<tr><td><code>tests</code></td><td>test_noise_bounded_and_seeded</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_registry_duplicate_writer_raises</td><td><span class="badge pass">passed</span></td><td>0.006</td></tr>
+<tr><td><code>tests</code></td><td>test_registry_invalid_clock_raises</td><td><span class="badge pass">passed</span></td><td>0.005</td></tr>
+<tr><td><code>tests</code></td><td>test_registry_valid_passes</td><td><span class="badge pass">passed</span></td><td>0.007</td></tr>
+<tr><td><code>tests</code></td><td>test_plasticity_positive_dw_only_plus</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_plasticity_zero_eps_decay</td><td><span class="badge pass">passed</span></td><td>0.003</td></tr>
+<tr><td><code>tests</code></td><td>test_propagation_manual_two_nodes</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_salience_linear_combination</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_clocks_invalid_order_raises</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_clocks_medium_active</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_snapshot_is_independent_of_state</td><td><span class="badge pass">passed</span></td><td>0.005</td></tr>
+<tr><td><code>tests</code></td><td>test_clone_is_independent</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_delayed_zero_after_advance</td><td><span class="badge pass">passed</span></td><td>0.007</td></tr>
+<tr><td><code>tests</code></td><td>test_apply_delta_dX_adds</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_apply_delta_dM_add_increases_store</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_empty_store_projection_is_zero</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_store_projection_shape_and_status_filter</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_w_eff_sign</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_laplacian_row_sums_zero</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr>
+<tr><td><code>tests</code></td><td>test_field_update_decay_with_zero_input</td><td><span class="badge pass">passed</span></td><td>0.004</td></tr></table></div>
+</div>
+
+<div id="t-cov" class="tab">
+ <h2>Покрытие по модулям (сортировка от худшего)</h2>
+ <table><tr><th>Модуль</th><th>Строк</th><th>Не покрыто</th><th>Покрытие</th></tr><tr><td><code>io/envelope.py</code></td><td>9</td><td>9</td><td><span class='bar'><div style='width:0%'></div></span> 0.0%</td></tr>
 <tr><td><code>runtime/scheduler.py</code></td><td>16</td><td>4</td><td><span class='bar'><div style='width:75%'></div></span> 75.0%</td></tr>
 <tr><td><code>core/state.py</code></td><td>77</td><td>18</td><td><span class='bar'><div style='width:77%'></div></span> 76.6%</td></tr>
 <tr><td><code>runtime/pipeline.py</code></td><td>172</td><td>23</td><td><span class='bar'><div style='width:87%'></div></span> 86.6%</td></tr>
@@ -73,13 +182,154 @@
 <tr><td><code>runtime/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
 <tr><td><code>runtime/bootstrap.py</code></td><td>47</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
 <tr><td><code>runtime/candidate.py</code></td><td>8</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-<tr><td><code>safety/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr>
-</table>
-<h2>Тесты по файлам</h2>
-<table>
-<tr><th>Файл</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Время, с</th></tr>
-<tr><td><code>tests</code></td><td>76</td><td class="">0</td><td>0</td><td>10.23</td></tr>
-</table>
-<footer class="muted">✅ Все проверки зелёные: тесты пройдены, линтер чистый.</footer>
+<tr><td><code>safety/__init__.py</code></td><td>0</td><td>0</td><td><span class='bar'><div style='width:100%'></div></span> 100.0%</td></tr></table>
+ <h2>Непокрытые строки (ошибки/риски покрытия)</h2>
+ <details><summary><code>io/envelope.py</code> — 0.0% (9 строк не покрыто)</summary><pre>1, 4, 5, 8, 9, 10, 11, 12, 13</pre></details>
+<details><summary><code>runtime/scheduler.py</code> — 75.0% (4 строк не покрыто)</summary><pre>12, 17, 18, 19</pre></details>
+<details><summary><code>core/state.py</code> — 76.6% (18 строк не покрыто)</summary><pre>53, 80, 102, 120, 121, 126, 132, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 149</pre></details>
+<details><summary><code>runtime/pipeline.py</code> — 86.6% (23 строк не покрыто)</summary><pre>104, 105, 106, 107, 108, 109, 110, 111, 121, 122, 123, 124, 125, 126, 127, 131, 132, 133, 134, 135, 251, 256, 287</pre></details>
+<details><summary><code>io/buffer.py</code> — 88.9% (1 строк не покрыто)</summary><pre>8</pre></details>
+<details><summary><code>core/kernels.py</code> — 91.7% (1 строк не покрыто)</summary><pre>18</pre></details>
+<details><summary><code>core/operators.py</code> — 91.7% (2 строк не покрыто)</summary><pre>16, 18</pre></details>
+<details><summary><code>memory/store.py</code> — 94.4% (1 строк не покрыто)</summary><pre>14</pre></details>
+<details><summary><code>graph/topology.py</code> — 95.8% (1 строк не покрыто)</summary><pre>28</pre></details>
+<details><summary><code>safety/invariants.py</code> — 96.2% (1 строк не покрыто)</summary><pre>21</pre></details>
+<details><summary><code>runtime/diagnostics.py</code> — 96.2% (2 строк не покрыто)</summary><pre>39, 56</pre></details>
+<details><summary><code>core/delta.py</code> — 96.4% (1 строк не покрыто)</summary><pre>45</pre></details>
+</div>
+
+<div id="t-crit" class="tab">
+ <h2>Критерии фальсификации V1</h2>
+ <div class="kv"><b>Определения и канонические пороги (<code>config/bootstrap.yaml</code>, <code>experiments/m0/run_m0.py</code>):</b>
+ <table><tr><th>Критерий</th><th>Условие прохождения</th><th>Порог</th></tr>
+ <tr><td><code>warm_ok</code></td><td>среднее s_ed за последние 200 warm-тиков &gt; θ</td><td>θ = 0.15</td></tr>
+ <tr><td><code>activity_band</code></td><td>A_min &lt; mean(activity) &lt; A_max</td><td>(0.0, 1.0)</td></tr>
+ <tr><td><code>entropy_band</code></td><td>H_min &lt; mean(H) &lt; H_max</td><td>(0.0, 2.5)</td></tr>
+ <tr><td><code>rho_stable</code></td><td>max ρ(J) &lt; rho_max</td><td>&lt; 1.50</td></tr>
+ <tr><td><code>no_recovery</code></td><td>сумма нарушений инвариантов == 0</td><td>0 viol</td></tr>
+ <tr><td><code>nontrivial</code></td><td>std(activity) &gt; 1e-3</td><td>&gt; 0.001</td></tr>
+ <tr><td><code>pass</code></td><td>ИИ всех шести критериев</td><td>—</td></tr>
+ </table></div>
+ <h2>Результаты sweep по комбо (✗ = FAIL, ✓ = PASS)</h2>
+ <div class="scroll"><table><tr><th>combo</th><th>warm_ok</th><th>activity_band</th><th>entropy_band</th><th>rho_stable</th><th>no_recovery</th><th>nontrivial</th><th>pass</th></tr><tr><td><code>eta=0.001, Lambda=0.2, eta_g=0.0</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.001, Lambda=0.2, eta_g=0.05</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.001, Lambda=0.3, eta_g=0.0</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.001, Lambda=0.3, eta_g=0.05</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.001, Lambda=0.4, eta_g=0.0</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.001, Lambda=0.4, eta_g=0.05</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.001, Lambda=0.5, eta_g=0.0</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.001, Lambda=0.5, eta_g=0.05</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.01, Lambda=0.2, eta_g=0.0</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.01, Lambda=0.2, eta_g=0.05</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.01, Lambda=0.3, eta_g=0.0</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.01, Lambda=0.3, eta_g=0.05</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.01, Lambda=0.4, eta_g=0.0</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.01, Lambda=0.4, eta_g=0.05</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.01, Lambda=0.5, eta_g=0.0</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.01, Lambda=0.5, eta_g=0.05</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.1, Lambda=0.2, eta_g=0.0</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.1, Lambda=0.2, eta_g=0.05</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.1, Lambda=0.3, eta_g=0.0</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.1, Lambda=0.3, eta_g=0.05</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.1, Lambda=0.4, eta_g=0.0</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.1, Lambda=0.4, eta_g=0.05</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.1, Lambda=0.5, eta_g=0.0</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr>
+<tr><td><code>eta=0.1, Lambda=0.5, eta_g=0.05</code></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="activity_band">✗</span></td><td><span class="badge pass">✓</span></td><td><span class="badge fail" title="rho_stable">✗</span></td><td><span class="badge fail" title="no_recovery">✗</span></td><td><span class="badge fail" title="nontrivial">✗</span></td><td><span class="badge pass">✓</span></td></tr></table></div>
+ <p class="kv">Вердикт полного V1: <span class="badge bad">НЕ НАЙДЕН</span> — известные причины провалов: <code>warm_ok</code>, <code>entropy_band</code> (см. ISSUE-001…003).</p>
+</div>
+
+<div id="t-exp" class="tab">
+ <h2>Динамика метрик по тикам</h2>
+ <div class="kv">Комбо (лог): <select id="comboSel"><option>eta0.001_L0.2_etag0.0</option><option>eta0.001_L0.2_etag0.05</option><option>eta0.001_L0.3_etag0.0</option><option>eta0.001_L0.3_etag0.05</option><option>eta0.001_L0.4_etag0.0</option><option>eta0.001_L0.4_etag0.05</option><option>eta0.001_L0.5_etag0.0</option><option>eta0.001_L0.5_etag0.05</option><option>eta0.01_L0.2_etag0.0</option><option>eta0.01_L0.2_etag0.05</option><option>eta0.01_L0.3_etag0.0</option><option>eta0.01_L0.3_etag0.05</option><option>eta0.01_L0.4_etag0.0</option><option>eta0.01_L0.4_etag0.05</option><option>eta0.01_L0.5_etag0.0</option><option>eta0.01_L0.5_etag0.05</option><option>eta0.1_L0.2_etag0.0</option><option>eta0.1_L0.2_etag0.05</option><option>eta0.1_L0.3_etag0.0</option><option>eta0.1_L0.3_etag0.05</option><option>eta0.1_L0.4_etag0.0</option><option>eta0.1_L0.4_etag0.05</option><option>eta0.1_L0.5_etag0.0</option><option>eta0.1_L0.5_etag0.05</option></select></div>
+ <canvas id="chartA" height="120"></canvas>
+ <div class="muted">activity (синий), rho_j (зелёный) — левая шкала; H (жёлтый) — правая шкала.</div>
+ <h2>Диагностика (среднее по тикам, из REPORT.md)</h2>
+ <div class="scroll"><table><tr><th>combo</th><th>activity</th><th>H</th><th>s_ed</th><th>rho_j</th><th>eps_norm</th><th>gate_frac</th><th>mean_F_ext</th><th>mask_frac</th><th>w_fro</th><th>mean_g</th></tr><tr><td>eta=0.001, Lambda=0.2, eta_g=0.0</td><td>0.0191</td><td>2.6421</td><td>0.0278</td><td>0.9604</td><td>1.2138</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0000</td></tr>
+<tr><td>eta=0.001, Lambda=0.2, eta_g=0.05</td><td>0.0191</td><td>2.6421</td><td>0.0278</td><td>0.9604</td><td>1.2138</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0001</td></tr>
+<tr><td>eta=0.001, Lambda=0.3, eta_g=0.0</td><td>0.0199</td><td>2.6401</td><td>0.0369</td><td>0.9405</td><td>1.2141</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0000</td></tr>
+<tr><td>eta=0.001, Lambda=0.3, eta_g=0.05</td><td>0.0199</td><td>2.6401</td><td>0.0369</td><td>0.9405</td><td>1.2141</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0001</td></tr>
+<tr><td>eta=0.001, Lambda=0.4, eta_g=0.0</td><td>0.0201</td><td>2.6256</td><td>0.0458</td><td>0.9207</td><td>1.2149</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0000</td></tr>
+<tr><td>eta=0.001, Lambda=0.4, eta_g=0.05</td><td>0.0201</td><td>2.6256</td><td>0.0458</td><td>0.9207</td><td>1.2149</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0001</td></tr>
+<tr><td>eta=0.001, Lambda=0.5, eta_g=0.0</td><td>0.0201</td><td>2.6166</td><td>0.0547</td><td>0.9009</td><td>1.2157</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0000</td></tr>
+<tr><td>eta=0.001, Lambda=0.5, eta_g=0.05</td><td>0.0201</td><td>2.6166</td><td>0.0547</td><td>0.9009</td><td>1.2157</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0001</td></tr>
+<tr><td>eta=0.01, Lambda=0.2, eta_g=0.0</td><td>0.0191</td><td>2.6421</td><td>0.0278</td><td>0.9604</td><td>1.2138</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0000</td></tr>
+<tr><td>eta=0.01, Lambda=0.2, eta_g=0.05</td><td>0.0191</td><td>2.6421</td><td>0.0278</td><td>0.9604</td><td>1.2138</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0001</td></tr>
+<tr><td>eta=0.01, Lambda=0.3, eta_g=0.0</td><td>0.0199</td><td>2.6401</td><td>0.0369</td><td>0.9405</td><td>1.2141</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0000</td></tr>
+<tr><td>eta=0.01, Lambda=0.3, eta_g=0.05</td><td>0.0199</td><td>2.6401</td><td>0.0369</td><td>0.9405</td><td>1.2141</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0001</td></tr>
+<tr><td>eta=0.01, Lambda=0.4, eta_g=0.0</td><td>0.0201</td><td>2.6256</td><td>0.0458</td><td>0.9207</td><td>1.2149</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0000</td></tr>
+<tr><td>eta=0.01, Lambda=0.4, eta_g=0.05</td><td>0.0201</td><td>2.6256</td><td>0.0458</td><td>0.9207</td><td>1.2149</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0001</td></tr>
+<tr><td>eta=0.01, Lambda=0.5, eta_g=0.0</td><td>0.0201</td><td>2.6166</td><td>0.0547</td><td>0.9009</td><td>1.2157</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0000</td></tr>
+<tr><td>eta=0.01, Lambda=0.5, eta_g=0.05</td><td>0.0201</td><td>2.6166</td><td>0.0547</td><td>0.9009</td><td>1.2157</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0001</td></tr>
+<tr><td>eta=0.1, Lambda=0.2, eta_g=0.0</td><td>0.0191</td><td>2.6421</td><td>0.0278</td><td>0.9604</td><td>1.2138</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0000</td></tr>
+<tr><td>eta=0.1, Lambda=0.2, eta_g=0.05</td><td>0.0191</td><td>2.6421</td><td>0.0278</td><td>0.9604</td><td>1.2138</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0001</td></tr>
+<tr><td>eta=0.1, Lambda=0.3, eta_g=0.0</td><td>0.0199</td><td>2.6401</td><td>0.0369</td><td>0.9405</td><td>1.2141</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0000</td></tr>
+<tr><td>eta=0.1, Lambda=0.3, eta_g=0.05</td><td>0.0199</td><td>2.6401</td><td>0.0369</td><td>0.9405</td><td>1.2141</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0001</td></tr>
+<tr><td>eta=0.1, Lambda=0.4, eta_g=0.0</td><td>0.0201</td><td>2.6256</td><td>0.0458</td><td>0.9207</td><td>1.2149</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0000</td></tr>
+<tr><td>eta=0.1, Lambda=0.4, eta_g=0.05</td><td>0.0201</td><td>2.6256</td><td>0.0458</td><td>0.9207</td><td>1.2149</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0001</td></tr>
+<tr><td>eta=0.1, Lambda=0.5, eta_g=0.0</td><td>0.0201</td><td>2.6166</td><td>0.0547</td><td>0.9009</td><td>1.2157</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0000</td></tr>
+<tr><td>eta=0.1, Lambda=0.5, eta_g=0.05</td><td>0.0201</td><td>2.6166</td><td>0.0547</td><td>0.9009</td><td>1.2157</td><td>0.7429</td><td>0.0134</td><td>1.0000</td><td>0.7327</td><td>1.0001</td></tr></table></div>
+</div>
+
+<div id="t-tasks" class="tab">
+ <h2>Чек-лист задач (iski-tasks-v3.0/CHECKLIST.md)</h2>
+ <table><tr><th>T</th><th>Задание</th><th>Тесты зелёные</th><th>operators.yaml</th><th>Issues / заметки</th></tr><tr><td><b>T01</b></td><td>Окружение и скелет пакета</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T02</b></td><td>Контракт дельт (single-writer)</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T03</b></td><td>Состояние Omega + ring-buffer задержек</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T04</b></td><td>Snapshot + реестр операторов</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T05</b></td><td>Ядра сходства + разреженный граф (COO)</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T06</b></td><td>Распространение с задержками + уравнение поля + шум</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T07</b></td><td>Salience + Attention (распределение по N)</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T08</b></td><td>GWS broadcast: порог + мягкие веса</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T09</b></td><td>Enc_shared + Head_1 + ring B_h (delayed credit)</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T10</b></td><td>Eligibility (fast) + пластичность (medium)</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T11</b></td><td>Элемент памяти + bounded store + F_mem</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T12</b></td><td>F_mode: 5 уравнений жизненного цикла</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T13</b></td><td>F_forget {Keep,Archive} + F_archive (async)</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T14</b></td><td>Hard-инварианты: check + project</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T15</b></td><td>Clocks + сборка кандидата</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T16</b></td><td>Метрики: activity, H(X), s_ed, rho(J)</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T17</b></td><td>Pipeline 22 шага + commit + maintenance</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T18</b></td><td>Envelope, InputBuffer, hash-encoder</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T19</b></td><td>Конфигурация: model/runtime/operators/bootstrap/m0</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T20</b></td><td>M0 falsification-прогон V1 + REPORT</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>-</td></tr>
+<tr><td><b>T21</b></td><td>Финальный гейт и упаковка архива</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>полный V1 запущен, вердикт НЕ НАЙДЕН</td></tr>
+<tr><td><b>T22</b></td><td>Гомеостаз (mu, theta, g) + расширенная диагностика</td><td><span class="badge "pass">OK</span></td><td>[x]</td><td class='muted'>повторный V1 (fast): НЕ НАЙДЕН; p0 0-&gt;0.5; ISSUE-001</td></tr>
+<tr><td><b>T24</b></td><td>Конфиг-аудит + w_init_max/W_max + повторный fast-V1</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>fast-V1: 5/6, только entropy_band fail; ISSUE-002</td></tr>
+<tr><td><b>T25</b></td><td>Каноника H_max/rho_max + fast-V1 6/6 + полный V1</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>fast 6/6 (НАЙДЕН); полный V1: НЕ НАЙДЕН (warm_ok, entropy_band); seed-фикс torch в bootstrap</td></tr>
+<tr><td><b>T26</b></td><td>Ингибиторный bootstrap (w_minus, второй набор рёбер)</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>fast-V1: НЕ НАЙДЕН (warm_ok, entropy_band); полный V1 не запускался (&lt;6/6); ISSUE-003</td></tr>
+<tr><td><b>T27</b></td><td>Канон: p_I=rho_I*p0, xi_max=0.01, единый Lambda, fail-fast</td><td><span class="badge "pass">OK</span></td><td>N/A</td><td class='muted'>ребейзлайн fast-V1: НЕ НАЙДЕН (warm_ok, entropy_band); sweep Lambda невырожден; полный V1 не запускался</td></tr></table>
+</div>
+
+<footer class="muted">✅ CI-гейт зелёный: тесты пройдены, линтер чистый. Научный гейт V1: НЕ НАЙДЕН</footer>
+</div>
+<script>
+const SERIES = {series_json};
+document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); document.getElementById(b.dataset.t).classList.add('active');
+});
+function draw(combo) {
+  const d = SERIES[combo]; if (!d) return;
+  const c = document.getElementById('chartA'), ctx = c.getContext('2d');
+  const W = c.width = c.clientWidth * devicePixelRatio, Hh = c.height = 320 * devicePixelRatio;
+  ctx.clearRect(0,0,W,Hh); ctx.fillStyle='#0f1117'; ctx.fillRect(0,0,W,Hh);
+  function line(vals, min, max, color, off) {
+    ctx.strokeStyle=color; ctx.lineWidth=2*devicePixelRatio; ctx.beginPath();
+    vals.forEach((y,i)=>{ const x=(i/(vals.length-1))*(W-off*2)+off;
+      const yy=Hh-off-(y-min)/(max-min||1)*(Hh-off*2);
+      i?ctx.lineTo(x,yy):ctx.moveTo(x,yy); });
+    ctx.stroke();
+  }
+  const mx=v=>Math.max(...v), mn=v=>Math.min(...v);
+  line(d.activity, mn(d.activity)*0.9, Math.max(mx(d.activity)*1.1,1e-6), '#38bdf8', 40);
+  line(d.rho_j, mn(d.rho_j)*0.95, mx(d.rho_j)*1.05+1e-9, '#4ade80', 40);
+  line(d.H, mn(d.H)*0.95, mx(d.H)*1.05, '#fbbf24', 40);
+  ctx.fillStyle='#8b93a7'; ctx.font=(11*devicePixelRatio)+'px sans-serif';
+  ctx.fillText(combo, 46, 18*devicePixelRatio);
+}
+const sel=document.getElementById('comboSel');
+if (sel) { sel.onchange=()=>draw(sel.value); draw(sel.value); }
+</script>
 </body>
 </html>
