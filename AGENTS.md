@@ -26,6 +26,8 @@ Workflow (Dialog Coding Cycle), политики Council/Router/Expert/лими�
 
 ## Local conventions
 - Код оформляется по стилю ruff с длиной строки по умолчанию.
+- Git CLI не установлен; git-операции — через dulwich в `.venv` (`.venv\Scripts\python.exe -c "from dulwich import porcelain; ..."`). Remote: `git@github.com:INKkripto/semantic.git`, ветка `main`.
+- `make` лежит в `.tools\make\bin\make.exe`; для `make test/lint` нужен `.venv\Scripts` в PATH.
 - Каждая сессия решает ровно одно задание из `iski-tasks-v3.0/tasks/T01..T21`.
 - Отчёт сессии включает: изменённые файлы, вывод `make test`/`make lint`, отклонения, строку в `CHECKLIST.md`, план следующего задания.
 
