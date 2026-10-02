@@ -1,0 +1,70 @@
+import numpy as np
+import torch
+
+from iski.core.state import OmegaState
+from iski.dynamics.noise import make_rng
+from iski.graph.topology import GraphCOO
+from iski.prediction.buffer import RingBufferH
+from iski.prediction.heads import PredHead
+from iski.runtime.pipeline import Pipeline
+from iski.runtime.scheduler import Clocks
+
+
+class _Cfg:
+    Dmax = 0
+    sigma = 1.0
+    theta = 0.0
+    beta = 0.0
+    T_A = 1.0
+    lam_n = 1.0
+    lam_e = 1.0
+    kappa = 1.0
+    Lam = 1.0
+    xi_max = 0.0
+    lam = 0.1
+    gate_thr = 0.0
+    qmax = 1.0
+    eta = 0.01
+    lam_w = 0.0
+    Lambda = 0.5
+    tau1 = 1
+    M_max = 5
+    w_max = 1.0
+    x_min = -10.0
+    x_max = 10.0
+    W_max = 100.0
+    E_max = 10.0
+    q_max = 10.0
+
+
+def _make_state():
+    edge_index = np.array([[0], [1]], dtype=int)
+    graph = GraphCOO(
+        edge_index,
+        w_plus=np.zeros(1),
+        w_minus=np.zeros(1),
+        delays=np.zeros(1, dtype=int),
+        q_elig=np.zeros(1),
+    )
+    E = np.eye(2, dtype=float)
+    X = np.zeros((2, 2), dtype=float)
+    S = np.array([[0.1, 0.0, 1.0], [0.1, 0.0, 1.0]])
+    return OmegaState(_Cfg(), E, X, graph, S, store=[], tick=0)
+
+
+def test_cache_seen_at_structural():
+    torch.manual_seed(0)
+    head = PredHead(2, 2, 3)
+    hbuf = RingBufferH(5)
+    rng = make_rng(0)
+    state = _make_state()
+    clocks = Clocks(2, 4, 8)
+    pipeline = Pipeline(state, clocks, _Cfg(), head, hbuf, rng)
+
+    assert pipeline.metrics_cache is None
+    # tick 0 structural with no cache, then tick 1, then tick 2 structural with cache
+    pipeline.tick(None, 0.0)
+    assert pipeline.metrics_cache is not None
+    pipeline.tick(None, 0.0)
+    pipeline.tick(None, 0.0)
+    assert pipeline.metrics_cache is not None

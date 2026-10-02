@@ -1,0 +1,8 @@
+clocks:
+  m: 10
+  s: 50
+  q: 200
+seeds:
+  boot: 7
+  noise: 11
+T_maint: 500

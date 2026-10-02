@@ -1,0 +1,11 @@
+p0: 0.0
+warm_ticks: 1000
+auto_ticks: 4000
+A_min: 0.0
+A_max: 1.0
+H_min: 0.0
+H_max: 2.0
+rho_max: 1.0
+theta_ed_warm: 0.9
+K_no_rec: 5
+window: 100

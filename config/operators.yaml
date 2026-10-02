@@ -1,0 +1,53 @@
+- name: field_update
+  clock: fast
+  level: 0
+  reads: [X, I_src, L]
+  writes: [dX]
+
+- name: eligibility
+  clock: fast
+  level: 1
+  reads: [X, graph.q_elig]
+  writes: [dQ_elig]
+
+- name: plasticity
+  clock: medium
+  level: 1
+  reads: [graph.q_elig, eps]
+  writes: [dW_plus, dW_minus]
+
+- name: e_align
+  clock: medium
+  level: 2
+  reads: [E, e_in]
+  writes: [dE]
+
+- name: memory_lifecycle
+  clock: medium
+  level: 2
+  reads: [store, E, X, eps]
+  writes: [dM]
+
+- name: head_train
+  clock: fast
+  level: 0
+  reads: [h, X]
+  writes: []
+
+- name: homeostasis
+  clock: medium
+  level: 2
+  reads: [S, X]
+  writes: [dS]
+
+- name: structural_stub
+  clock: structural
+  level: 3
+  reads: [metrics_cache]
+  writes: []
+
+- name: diagnostics
+  clock: slow
+  level: 3
+  reads: [X, E, graph, eps]
+  writes: [dG]
