@@ -32,6 +32,8 @@ def test_canonical_values():
 
     assert model["W_max"] == 2.0
     assert model["sigma"] == 0.5
+    assert model["Lam"] == 0.5
+    assert model["xi_max"] == 0.1
     assert model["mu_star"] == 0.1
     assert model["beta_h"] == 0.05
     assert model["eta_theta"] == 0.01
