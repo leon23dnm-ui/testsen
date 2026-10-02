@@ -27,6 +27,13 @@ def test_bootstrap_weights_bounded_by_w_init_max():
     assert (graph.w_minus > 0.0).any()
 
 
+def test_bootstrap_inhibitory_fraction():
+    cfg, graph = _graph()
+    n_pairs = cfg.N * (cfg.N - 1)
+    frac = float((graph.w_minus > 0).sum()) / n_pairs
+    assert abs(frac - cfg.rho_I * cfg.p0) <= 0.10
+
+
 def test_bootstrap_delays_in_range():
     cfg, graph = _graph()
     assert (graph.delays >= 0).all()

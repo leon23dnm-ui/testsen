@@ -26,3 +26,4 @@
 | 24 | Конфиг-аудит + w_init_max/W_max + повторный fast-V1 | [x] | N/A | fast-V1: 5/6, только entropy_band fail; ISSUE-002 |
 | 25 | Каноника H_max/rho_max + fast-V1 6/6 + полный V1 | [x] | N/A | fast 6/6 (НАЙДЕН); полный V1: НЕ НАЙДЕН (warm_ok, entropy_band); seed-фикс torch в bootstrap |
 | 26 | Ингибиторный bootstrap (w_minus, второй набор рёбер) | [x] | N/A | fast-V1: НЕ НАЙДЕН (warm_ok, entropy_band); полный V1 не запускался (<6/6); ISSUE-003 |
+| 27 | Канон: p_I=rho_I*p0, xi_max=0.01, единый Lambda, fail-fast | [x] | N/A | ребейзлайн fast-V1: НЕ НАЙДЕН (warm_ok, entropy_band); sweep Lambda невырожден; полный V1 не запускался |

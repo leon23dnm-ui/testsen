@@ -97,7 +97,7 @@ def _tail_stats(log, keys, window: int = 100) -> dict:
 def run_combo(
     pipeline: Pipeline, cfg: types.SimpleNamespace, eta_plast: float, Lambda: float, eta_g: float
 ):
-    cfg.eta = eta_plast
+    cfg.eta_plast = eta_plast
     cfg.Lambda = Lambda
     cfg.eta_g = eta_g
 

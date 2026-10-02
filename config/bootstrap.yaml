@@ -1,6 +1,7 @@
 p0: 0.5
 w_init_max: 0.5
 w_minus_init_max: 0.15
+rho_I: 0.3
 warm_ticks: 1000
 auto_ticks: 4000
 A_min: 0.0

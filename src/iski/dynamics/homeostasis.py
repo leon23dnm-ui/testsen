@@ -18,12 +18,12 @@ def homeostasis_update(S, X, cfg) -> Delta:
     theta'= theta + eta_theta*(mu - mu*)
     g'    = clip(g + eta_g*(mu* - mu), g_min, g_max)
     """
-    mu_star = getattr(cfg, "mu_star", 0.1)
-    beta_h = getattr(cfg, "beta_h", 0.05)
-    eta_theta = getattr(cfg, "eta_theta", 0.01)
-    eta_g = getattr(cfg, "eta_g", 0.05)
-    g_min = getattr(cfg, "g_min", 0.5)
-    g_max = getattr(cfg, "g_max", 5.0)
+    mu_star = cfg.mu_star
+    beta_h = cfg.beta_h
+    eta_theta = cfg.eta_theta
+    eta_g = cfg.eta_g
+    g_min = cfg.g_min
+    g_max = cfg.g_max
 
     S_arr = np.asarray(S, dtype=float)
     mu, theta, g = S_arr[:, 0], S_arr[:, 1], S_arr[:, 2]

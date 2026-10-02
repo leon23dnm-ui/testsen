@@ -32,8 +32,9 @@ def test_canonical_values():
 
     assert model["W_max"] == 2.0
     assert model["sigma"] == 0.5
-    assert model["Lam"] == 0.5
-    assert model["xi_max"] == 0.1
+    assert model["Lambda"] == 0.3
+    assert "Lam" not in model
+    assert model["xi_max"] == 0.01
     assert model["mu_star"] == 0.1
     assert model["beta_h"] == 0.05
     assert model["eta_theta"] == 0.01
@@ -43,6 +44,7 @@ def test_canonical_values():
     assert bootstrap["p0"] == 0.5
     assert bootstrap["w_init_max"] == 0.5
     assert bootstrap["w_minus_init_max"] == 0.15
+    assert bootstrap["rho_I"] == 0.3
     assert bootstrap["theta_ed_warm"] == 0.15
     assert bootstrap["H_max"] == 2.5
     assert bootstrap["rho_max"] == 1.5

@@ -32,7 +32,7 @@ def compute_metrics(st, eps, e_in, cfg) -> dict:
 
     if st.graph is not None:
         A = st.graph.dense_abs(N)
-        Lambda = getattr(cfg, "Lambda", 0.0)
+        Lambda = cfg.Lambda
         J = (1.0 - Lambda) * np.eye(N) + Lambda * A
         rho_j = float(np.max(np.sum(np.abs(J), axis=1)))
     else:

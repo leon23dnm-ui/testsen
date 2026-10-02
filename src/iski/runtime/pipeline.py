@@ -25,7 +25,44 @@ from iski.safety.invariants import check, project
 class Pipeline:
     """Frozen 22-step pipeline M0."""
 
+    REQUIRED_CFG = (
+        "sigma",
+        "theta_gws",
+        "beta_g",
+        "T_A",
+        "lam_N",
+        "lam_E",
+        "Lambda",
+        "kappa",
+        "xi_max",
+        "lam_elig",
+        "gate_thr",
+        "q_max",
+        "eta",
+        "eta_plast",
+        "lam_w",
+        "theta_align",
+        "eta_E",
+        "w_max",
+        "w_min",
+        "theta_forget",
+        "theta_I",
+        "T_archive",
+        "tau1",
+        "M_max",
+        "mu_star",
+        "beta_h",
+        "eta_theta",
+        "eta_g",
+        "g_min",
+        "g_max",
+    )
+
     def __init__(self, state, clocks, cfg, head, hbuf, rng):
+        missing = [k for k in self.REQUIRED_CFG if not hasattr(cfg, k)]
+        if missing:
+            raise KeyError(f"cfg missing required keys: {missing}")
+
         self.state = state
         self.clocks = clocks
         self.cfg = cfg
@@ -43,9 +80,9 @@ class Pipeline:
         self._order.append(f"{n:02d}")
 
     def _e_align(self, E: np.ndarray, e_in: np.ndarray) -> np.ndarray:
-        theta = getattr(self.cfg, "theta_align", 0.0)
-        eta = getattr(self.cfg, "eta_E", 0.01)
-        K = kernel_similarity(E, e_in, getattr(self.cfg, "sigma", 1.0))
+        theta = self.cfg.theta_align
+        eta = self.cfg.eta_E
+        K = kernel_similarity(E, e_in, self.cfg.sigma)
         dE = np.zeros_like(E)
         mask = K > theta
         dE[mask] = eta * (e_in - E[mask])
@@ -53,12 +90,12 @@ class Pipeline:
 
     def _memory_lifecycle(self, t: int, sal: np.ndarray, eps: np.ndarray):
         ops = []
-        sigma = getattr(self.cfg, "sigma", 1.0)
-        eta_modes = getattr(self.cfg, "eta_modes", [0.1] * 9)
-        w_max = getattr(self.cfg, "w_max", 1.0)
-        w_min = getattr(self.cfg, "w_min", 0.1)
-        th_forget = getattr(self.cfg, "th_forget", 0.9)
-        th_I = getattr(self.cfg, "th_I", 0.1)
+        sigma = self.cfg.sigma
+        eta_modes = self.cfg.eta
+        w_max = self.cfg.w_max
+        w_min = self.cfg.w_min
+        th_forget = self.cfg.theta_forget
+        th_I = self.cfg.theta_I
 
         x_mean = self.state.X.mean(-1)
         eps_mean = np.abs(eps).mean(-1)
@@ -91,7 +128,7 @@ class Pipeline:
         return ops
 
     def maintenance(self) -> None:
-        T_archive = getattr(self.cfg, "T_archive", 100)
+        T_archive = self.cfg.T_archive
         idx = archive_sweep(self.state.store, self.state.tick, T_archive)
         if idx:
             ops = [("del", i) for i in reversed(idx)]
@@ -112,7 +149,7 @@ class Pipeline:
         # 02 F_ext
         self._append(2)
         if e_in is not None:
-            K_sim = kernel_similarity(E, e_in, getattr(self.cfg, "sigma", 1.0))
+            K_sim = kernel_similarity(E, e_in, self.cfg.sigma)
             F_ext = float(conf) * K_sim[:, None] * np.ones(K)
             self.last_e_in = e_in
         else:
@@ -121,19 +158,12 @@ class Pipeline:
         # 03 nov, pe, sal, att
         self._append(3)
         if self.last_e_in is not None:
-            nov = 1.0 - kernel_similarity(
-                E, self.last_e_in, getattr(self.cfg, "sigma", 1.0)
-            )
+            nov = 1.0 - kernel_similarity(E, self.last_e_in, self.cfg.sigma)
         else:
             nov = np.zeros(N)
         pe = np.abs(self.last_eps).mean(-1)
-        sal = salience(
-            nov,
-            pe,
-            getattr(self.cfg, "lam_n", 1.0),
-            getattr(self.cfg, "lam_e", 1.0),
-        )
-        att = attention(sal, getattr(self.cfg, "T_A", 1.0))
+        sal = salience(nov, pe, self.cfg.lam_N, self.cfg.lam_E)
+        att = attention(sal, self.cfg.T_A)
 
         # 04 GWS broadcast
         self._append(4)
@@ -141,18 +171,15 @@ class Pipeline:
             E,
             X,
             sal,
-            getattr(self.cfg, "theta", 0.0),
-            getattr(self.cfg, "sigma", 1.0),
-            getattr(self.cfg, "beta", 0.0),
+            self.cfg.theta_gws,
+            self.cfg.sigma,
+            self.cfg.beta_g,
         )
         X_bc = X_bc_t.numpy() if isinstance(X_bc_t, torch.Tensor) else X_bc_t
 
         # 05 F_mem
         self._append(5)
-        m_max = getattr(self.cfg, "M_max", len(store))
-        F_mem = MemoryStore(store, m_max).projection(
-            E, getattr(self.cfg, "sigma_mem", getattr(self.cfg, "sigma", 1.0)), K
-        )
+        F_mem = MemoryStore(store, self.cfg.M_max).projection(E, self.cfg.sigma, K)
 
         # 06 h, hbuf, xhat
         self._append(6)
@@ -170,12 +197,12 @@ class Pipeline:
         self._append(8)
         L = graph.laplacian(N)
         I_src = F_ext + F_mem + prop + (X_bc - X)
-        xi_t = xi(self.rng, X.shape, getattr(self.cfg, "xi_max", 0.0))
+        xi_t = xi(self.rng, X.shape, self.cfg.xi_max)
         X_next_t = field_update(
             X,
             I_src,
-            getattr(self.cfg, "Lam", 1.0),
-            getattr(self.cfg, "kappa", 1.0),
+            self.cfg.Lambda,
+            self.cfg.kappa,
             L,
             xi_t,
             g=self.state.S[:, 2],
@@ -188,7 +215,7 @@ class Pipeline:
         self._append(9)
         eps = X_next - xhat
         self.last_eps = eps
-        tau1 = getattr(self.cfg, "tau1", 1)
+        tau1 = self.cfg.tau1
         h_old = self.hbuf.get(t - tau1)
         if h_old is not None:
             self.head.train_step(h_old, X_next)
@@ -198,9 +225,9 @@ class Pipeline:
         dQ = update_eligibility(
             graph,
             self.state,
-            getattr(self.cfg, "lam", 0.1),
-            getattr(self.cfg, "gate_thr", 0.0),
-            getattr(self.cfg, "qmax", 1.0),
+            self.cfg.lam_elig,
+            self.cfg.gate_thr,
+            self.cfg.q_max,
         )
         deltas = [Delta(dX=dX), Delta(dQ_elig=dQ)]
 
@@ -211,8 +238,8 @@ class Pipeline:
                 plasticity_delta(
                     graph,
                     eps,
-                    getattr(self.cfg, "eta", 0.01),
-                    getattr(self.cfg, "lam_w", 0.0),
+                    self.cfg.eta_plast,
+                    self.cfg.lam_w,
                 )
             )
             deltas.append(homeostasis_update(self.state.S, self.state.X, self.cfg))
@@ -242,7 +269,7 @@ class Pipeline:
             tick_metrics(
                 F_ext,
                 gws_mask,
-                gate_fraction(self.state, graph, getattr(self.cfg, "gate_thr", 0.0)),
+                gate_fraction(self.state, graph, self.cfg.gate_thr),
                 cand.graph,
                 cand.S,
                 cand.X,

@@ -14,9 +14,10 @@ from iski.runtime.scheduler import Clocks
 def bootstrap(cfg) -> Pipeline:
     """Bootstrap M0: E нормированные randn; два независимых набора рёбер.
 
-    Возбуждающие: w_plus ~ U(0, w_init_max); тормозящие: w_minus ~ U(0, w_minus_init_max)
-    (знак q=-1). Каждая популяция рисуется независимо с вероятностью p0 на пару i!=j;
-    ребро существует, если выпала хотя бы одна популяция. Весь рандом seeded.
+    Возбуждающие: w_plus ~ U(0, w_init_max) с вероятностью p0 на пару i!=j;
+    тормозящие: w_minus ~ U(0, w_minus_init_max) (знак q=-1) с вероятностью
+    p_I = rho_I*p0 (разреженнее). Наборы независимы; ребро существует, если
+    выпала хотя бы одна популяция. Весь рандом seeded.
     """
     torch.manual_seed(cfg.seeds["boot"])
     rng = np.random.default_rng(cfg.seeds["boot"])
@@ -28,12 +29,13 @@ def bootstrap(cfg) -> Pipeline:
     E = E / norms
 
     src, dst, w_plus, w_minus = [], [], [], []
+    p_i = cfg.rho_I * cfg.p0
     for i in range(N):
         for j in range(N):
             if i == j:
                 continue
             exc = rng.random() < cfg.p0
-            inh = rng.random() < cfg.p0
+            inh = rng.random() < p_i
             if not (exc or inh):
                 continue
             src.append(i)
