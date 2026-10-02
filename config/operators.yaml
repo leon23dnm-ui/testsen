@@ -28,6 +28,12 @@
   reads: [store, E, X, eps]
   writes: [dM]
 
+- name: memory_formation
+  clock: medium
+  level: 2
+  reads: [e_in, store, X]
+  writes: [dM]
+
 - name: head_train
   clock: fast
   level: 0

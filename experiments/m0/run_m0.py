@@ -47,9 +47,27 @@ DIAG_KEYS = (
     "mean_g",
 )
 
-LOG_KEYS = DIAG_KEYS + ("wm_fro", "h_norm", "node_spread", "mean_mu", "mean_theta")
+LOG_KEYS = DIAG_KEYS + (
+    "wm_fro",
+    "h_norm",
+    "node_spread",
+    "mean_mu",
+    "mean_theta",
+    "mem_fro",
+    "recall",
+)
 
-OBS_KEYS = ("h_norm", "node_spread", "w_fro", "wm_fro", "mask_frac", "gate_frac", "s_ed")
+OBS_KEYS = (
+    "h_norm",
+    "node_spread",
+    "w_fro",
+    "wm_fro",
+    "mask_frac",
+    "gate_frac",
+    "s_ed",
+    "mem_fro",
+    "recall",
+)
 
 
 def _write_log(path: Path, log) -> None:

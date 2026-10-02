@@ -15,6 +15,8 @@ W_max: 2.0
 E_max: 10.0
 q_max: 10.0
 M_max: 5
+w_mem_init: 0.3
+theta_form: 0.5
 w_max: 1.0
 w_min: 0.1
 theta_forget: 0.9

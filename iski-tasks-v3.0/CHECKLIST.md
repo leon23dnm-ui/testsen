@@ -28,3 +28,4 @@
 | 26 | Ингибиторный bootstrap (w_minus, второй набор рёбер) | [x] | N/A | fast-V1: НЕ НАЙДЕН (warm_ok, entropy_band); полный V1 не запускался (<6/6); ISSUE-003 |
 | 27 | Канон: p_I=rho_I*p0, xi_max=0.01, единый Lambda, fail-fast | [x] | N/A | ребейзлайн fast-V1: НЕ НАЙДЕН (warm_ok, entropy_band); sweep Lambda невырожден; полный V1 не запускался; правило: regex-булк по тестам запрещён (restore из HEAD при повреждении) |
 | 28 | Упразднение fast-гейта + full-horizon rebaseline + диагностика петли g | [x] | N/A | полный V1 (24 комбо): НЕ НАЙДЕН (warm_ok ~-0.025 marginal, entropy_band -0.24); петля g: mu->mu* через theta, g*w_row=0.38-0.47; ISSUE-003 амендирован |
+| 29 | F_form: формирование памяти (Novelty/theta_form, cap M_max) + диагностика F_mem/recall | [x] | N/A | полный V1: НЕ НАЙДЕН (warm_ok, entropy_band); F_mem!=0 (0.12-0.14), recall=0; ветвление -> T30: attention-модуляция W^eff |

@@ -41,6 +41,8 @@ def test_canonical_values():
     assert model["eta_g"] == 0.05
     assert model["g_min"] == 0.5
     assert model["g_max"] == 5.0
+    assert model["theta_form"] == 0.5
+    assert model["w_mem_init"] == 0.3
     assert bootstrap["p0"] == 0.5
     assert bootstrap["w_init_max"] == 0.5
     assert bootstrap["w_minus_init_max"] == 0.15

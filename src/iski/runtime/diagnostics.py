@@ -65,11 +65,14 @@ def gate_fraction(state, graph, gate_thr: float) -> float:
     return count / n_edges
 
 
-def tick_metrics(F_ext, gws_mask, gate_frac: float, graph, S, X) -> dict:
+def tick_metrics(
+    F_ext, gws_mask, gate_frac: float, graph, S, X, mem_fro=0.0, recall=0.0
+) -> dict:
     """Расширенный лог тика (readout, не входит в критерии V1).
 
     gate_frac, mean_F_ext, mask_frac, ||W_eff||_F, ||w_minus||_F, mean_g,
-    mean_mu, mean_theta, h_norm = H/log(N*K), node_spread = std_i mean_K|X_i|.
+    mean_mu, mean_theta, h_norm = H/log(N*K), node_spread = std_i mean_K|X_i|,
+    mem_fro = ||F_mem||_F, recall = число элементов памяти с max K(E,e_k)>0.3.
     """
     X_arr = np.asarray(X, dtype=float)
     size = X_arr.size
@@ -92,4 +95,6 @@ def tick_metrics(F_ext, gws_mask, gate_frac: float, graph, S, X) -> dict:
         "mean_theta": float(np.mean(np.asarray(S, dtype=float)[:, 1])),
         "h_norm": h_norm,
         "node_spread": float(np.std(np.abs(X_arr).mean(axis=-1))),
+        "mem_fro": float(mem_fro),
+        "recall": float(recall),
     }
