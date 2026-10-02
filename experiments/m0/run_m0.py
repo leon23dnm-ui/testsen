@@ -59,7 +59,7 @@ def bootstrap(cfg: types.SimpleNamespace) -> Pipeline:
                 dst.append(j)
     M = len(src)
     edge_index = np.array([src, dst], dtype=int) if M else np.empty((2, 0), dtype=int)
-    w_plus = rng.uniform(0.0, cfg.W_max, M) if M else np.zeros(0)
+    w_plus = rng.uniform(0.0, cfg.w_init_max, M) if M else np.zeros(0)
     w_minus = np.zeros(M)
     delays = rng.integers(0, cfg.Dmax, M) if M else np.zeros(0, dtype=int)
     q_elig = np.zeros(M)

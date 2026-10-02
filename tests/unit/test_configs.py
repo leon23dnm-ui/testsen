@@ -21,3 +21,17 @@ def test_model_config_loads():
         model = yaml.safe_load(f)
     assert model["N"] == 4
     assert len(model["eta"]) == 9
+
+
+def test_canonical_values():
+    """Каноническая таблица куратора (решение по ISSUE-001)."""
+    with open("config/model.yaml", encoding="utf-8") as f:
+        model = yaml.safe_load(f)
+    with open("config/bootstrap.yaml", encoding="utf-8") as f:
+        bootstrap = yaml.safe_load(f)
+
+    assert model["W_max"] == 2.0
+    assert model["sigma"] == 0.5
+    assert bootstrap["w_init_max"] == 0.5
+    assert bootstrap["theta_ed_warm"] == 0.15
+    assert bootstrap["p0"] == 0.5

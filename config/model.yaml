@@ -4,14 +4,14 @@ K: 4
 Dmax: 8
 Lambda: 0.5
 kappa: 1.0
-sigma: 1.0
+sigma: 0.5
 theta_gws: 0.0
 beta_g: 0.0
 T_A: 1.0
 xi_max: 0.0
 x_min: -10.0
 x_max: 10.0
-W_max: 100.0
+W_max: 2.0
 E_max: 10.0
 q_max: 10.0
 M_max: 5
