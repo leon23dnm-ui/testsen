@@ -169,7 +169,8 @@ def collect_logs() -> list[dict]:
     """Все CSV-логи -> даунсэмплинг ~200 точек, серии activity/H/rho_j."""
     out = []
     for f in sorted(LOGS.glob("*.csv")):
-        rows = list(csv.DictReader(open(f, encoding="utf-8")))
+        with open(f, encoding="utf-8") as fh:
+            rows = list(csv.DictReader(fh))
         step = max(1, len(rows) // 200)
         thin = rows[::step]
         out.append(
