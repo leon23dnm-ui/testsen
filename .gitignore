@@ -1,13 +1,1 @@
-.venv/
-.tools/
-__pycache__/
-*.pyc
-.pytest_cache/
-.ruff_cache/
-build/
-dist/
-*.egg-info/
-make_dl.zip
-iski-m0-v3.0.tar.gz
-iski-m0-v3.0.tar.gz.sha256
-.coverage
+(empty)
