@@ -5,65 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ISKI Chat — арифметика</title>
 <style>
-  :root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3; --dim:#8b949e; --acc:#58a6ff; --ok:#3fb950; }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif; background:var(--bg); color:var(--fg); height:100vh; display:flex; flex-direction:column; }
-  header { padding:14px 20px; background:var(--panel); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
-  header h1 { font-size:16px; margin:0; }
-  header .badge { font-size:11px; color:var(--dim); border:1px solid var(--border); border-radius:999px; padding:2px 10px; }
-  #chat { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px; }
-  .msg { max-width:75%; padding:10px 14px; border-radius:14px; line-height:1.45; white-space:pre-wrap; word-break:break-word; }
-  .user { align-self:flex-end; background:#1f6feb33; border:1px solid #1f6feb55; border-bottom-right-radius:4px; }
-  .bot  { align-self:flex-start; background:var(--panel); border:1px solid var(--border); border-bottom-left-radius:4px; }
-  .bot.err { border-color:#f85149aa; }
-  .meta { font-size:11px; color:var(--dim); margin-top:4px; }
-  form { display:flex; gap:10px; padding:14px 20px; background:var(--panel); border-top:1px solid var(--border); }
-  input[type=text] { flex:1; background:var(--bg); color:var(--fg); border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:15px; outline:none; }
-  input[type=text]:focus { border-color:var(--acc); }
-  button { background:var(--acc); color:#0b1220; font-weight:600; border:0; border-radius:10px; padding:10px 18px; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:wait; }
-  .hints { padding:6px 20px 0; font-size:12px; color:var(--dim); }
-  .hints span { cursor:pointer; color:var(--acc); margin-right:8px; }
+:root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--ok:#3fb950;--warn:#d29922}
+*{box-sizing:border-box}body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;height:100vh}
+header{padding:14px 20px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+header h1{font-size:16px;margin:0;font-weight:600}header .badge{font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:2px 8px}
+#chat{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:75%;padding:10px 14px;border-radius:14px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.user{align-self:flex-end;background:#1f6feb;color:#fff;border-bottom-right-radius:4px}
+.bot{align-self:flex-start;background:var(--panel);border:1px solid var(--border);border-bottom-left-radius:4px}
+.meta{display:block;margin-top:6px;font-size:11px;color:var(--muted)}
+.hints{display:flex;gap:8px;flex-wrap:wrap;padding:0 20px 8px}
+.hints button{background:var(--panel);border:1px solid var(--border);color:var(--accent);border-radius:16px;padding:6px 12px;cursor:pointer;font-size:13px}
+.hints button:hover{border-color:var(--accent)}
+footer{display:flex;gap:10px;padding:14px 20px;background:var(--panel);border-top:1px solid var(--border)}
+#inp{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px 14px;font-size:15px;outline:none}
+#inp:focus{border-color:var(--accent)}
+#send{background:var(--accent);border:none;color:#0d1117;font-weight:600;border-radius:10px;padding:12px 22px;cursor:pointer}
+#send:disabled{opacity:.5;cursor:wait}
+.typing{color:var(--muted);font-style:italic}
 </style>
 </head>
 <body>
-<header><h1>🤖 ISKI Chat</h1><span class="badge">цифры и + − × ÷ · CharGPT</span></header>
-<div id="chat"></div>
-<div class="hints">Попробуй: <span>1+1</span><span>45-5</span><span>9/3</span><span>7*8</span><span>100+250</span></div>
-<form id="f" autocomplete="off">
-  <input type="text" id="q" placeholder="Напиши пример, например 45-5 …" autofocus>
-  <button id="send" type="submit">Ответить</button>
-</form>
+<header><h1>🤖 ISKI Chat — цифры и + − × ÷</h1><span class="badge" id="status">подключение…</span></header>
+<div id="chat"><div class="msg bot">Привет! Я обучена на цифрах и операциях + − × ÷. Спроси, например: «1+1», «сколько будет 45 - 5?» или «9 разделить на 3».</div></div>
+<div class="hints">
+<button>1+1</button><button>45-5</button><button>9/3</button><button>7*8</button><button>12÷4</button><button>100 минус 1</button>
+</div>
+<footer><input id="inp" placeholder="Например: сколько будет 12 * 8?" autocomplete="off"><button id="send">➤</button></footer>
 <script>
-const chat = document.getElementById('chat');
-function add(cls, text, meta) {
-  const d = document.createElement('div');
-  d.className = 'msg ' + cls;
-  d.textContent = text;
-  if (meta) { const m = document.createElement('div'); m.className='meta'; m.textContent=meta; d.appendChild(m); }
-  chat.appendChild(d); chat.scrollTop = chat.scrollHeight; return d;
-}
-add('bot', 'Привет! Я считаю простые примеры: сложение, вычитание, умножение и деление. Напиши, например: 45-5');
-async function ask(text) {
-  add('user', text);
-  const pending = add('bot', '…');
-  try {
-    const r = await fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message:text})});
-    const j = await r.json();
-    pending.textContent = j.answer ?? ('Ошибка: ' + (j.error || r.status));
-    if (!r.ok) pending.classList.add('err');
-    if (j.ms != null) { const m=document.createElement('div'); m.className='meta'; m.textContent = (j.model ? 'модель' : 'эталон') + ' · ' + Math.round(j.ms) + ' мс'; pending.appendChild(m); }
-  } catch(e) { pending.textContent = 'Сервер недоступен: ' + e; pending.classList.add('err'); }
-  document.getElementById('send').disabled = false;
-}
-document.getElementById('f').addEventListener('submit', e => {
-  e.preventDefault();
-  const inp = document.getElementById('q');
-  const v = inp.value.trim(); if (!v) return;
-  inp.value = ''; document.getElementById('send').disabled = true;
-  ask(v);
-});
-document.querySelectorAll('.hints span').forEach(s => s.addEventListener('click', () => { document.getElementById('q').value = s.textContent; }));
+const chat=document.getElementById('chat'),inp=document.getElementById('inp'),send=document.getElementById('send'),status=document.getElementById('status');
+function bubble(cls,html){const d=document.createElement('div');d.className='msg '+cls;d.innerHTML=html;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;return d}
+async function check(){try{const r=await fetch('/api/health');const j=await r.json();status.textContent=j.model_loaded?('модель загружена · acc '+(j.holdout_acc*100).toFixed(1)+'%'):'только эталонный калькулятор';status.style.color=j.model_loaded?'var(--ok)':'var(--warn)'}catch(e){status.textContent='сервер недоступен'}}
+async function ask(){const q=inp.value.trim();if(!q)return;inp.value='';send.disabled=true;bubble('user',q.replace(/</g,'&lt;'));const t=bubble('bot','<span class="typing">думаю…</span>');
+try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:q})});const j=await r.json();t.innerHTML=j.reply.replace(/</g,'&lt;')+'<span class="meta">'+(j.source||'')+' · '+Math.round(j.ms||0)+' мс</span>'}
+catch(e){t.innerHTML='⚠️ ошибка соединения с сервером'}
+send.disabled=false;inp.focus();chat.scrollTop=chat.scrollHeight}
+send.onclick=ask;inp.onkeydown=e=>{if(e.key==='Enter')ask()};document.querySelectorAll('.hints button').forEach(b=>b.onclick=()=>{inp.value=b.textContent;ask()});check();
 </script>
 </body>
 </html>

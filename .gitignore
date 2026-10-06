@@ -1,1 +1,13 @@
-(empty)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.coverage
+.pytest_cache/
+.ruff_cache/
+models/*.pt
+*.log
+/tmp/
+.venv/

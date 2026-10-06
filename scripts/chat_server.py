@@ -1,116 +1,131 @@
 #!/usr/bin/env python3
-"""Веб-интерфейс чата «цифры и арифметика» на stdlib http.server.
+"""Веб-интерфейс чата арифметики (stdlib http.server, без внешних зависимостей).
 
-Запуск:  python scripts/chat_server.py [--port 8091]
-Нужна обученная модель:  python -m iski.chat.trainer  ->  models/chat_arith.pt
-
-API:
-  GET  /            — HTML морда чата
-  GET  /api/health  — статус модели
-  POST /api/chat    — {"message": "45-5"} -> {"answer": "...", "model": true, "ms": 12}
+Запуск:  python scripts/chat_server.py --port 8091
+API:     GET /            -> HTML чата
+         POST /api/chat   -> {"message": str} => {"reply", "source", "ms"}
+         GET /api/health  -> {"ok", "model_loaded", "holdout_acc"}
 """
-
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from iski.chat.dataset import exact_answer, parse_question  # noqa: E402
-from iski.chat.trainer import load_model  # noqa: E402
+import torch  # noqa: E402
 
-INDEX_HTML = ROOT / "src" / "iski" / "chat" / "web" / "index.html"
-CKPT = ROOT / "models" / "chat_arith.pt"
+from iski.chat.dataset import exact_answer, fmt_expr, parse_question  # noqa: E402
+from iski.chat.model import BOS, CharGPT, decode, encode  # noqa: E402
+
+CKPT = os.environ.get("CHAT_CKPT", "models/chat_arith.pt")
+HTML_PATH = os.path.join(os.path.dirname(__file__), "..", "src", "iski", "chat", "web", "index.html")
 
 MODEL = None
+META = {}
 
 
-def _clean(gen: str) -> str:
-    return gen.split("=")[0].split("?")[0].strip(" .,")
+def load_model():
+    global MODEL, META
+    if not os.path.exists(CKPT):
+        return False
+    try:
+        ck = torch.load(CKPT, map_location="cpu")
+        m = CharGPT(dim=ck.get("dim", 96), layers=ck.get("layers", 3), heads=ck.get("heads", 4))
+        m.load_state_dict(ck["state_dict"])
+        m.eval()
+        MODEL = m
+        META = {"holdout_acc": float(ck.get("holdout_acc", -1.0))}
+        return True
+    except Exception as e:  # несовместимый чекпойнт — работаем от эталона
+        print(f"[chat] checkpoint incompatible: {e}", file=sys.stderr)
+        return False
 
 
-def answer(text: str) -> dict:
-    """Ответ чата: генерация модели + сверка с эталонной арифметикой."""
-    parsed = parse_question(text)
+def answer(message: str) -> dict:
+    parsed = parse_question(message)
     if parsed is None:
-        return {
-            "answer": "Я умею только примеры вида a + b, a - b, a * b, a / b. Например: 45-5",
-            "model": False,
-            "ms": 0,
-        }
+        return {"reply": "Я умею только арифметику с числами и + − × ÷. Например: 1+1, 45-5, 9/3.",
+                "source": "n/a", "ms": 0}
     a, op, b = parsed
     gold = exact_answer(a, op, b)
-    if gold is None:
-        return {"answer": "На ноль делить нельзя 🚫", "model": False, "ms": 0}
     t0 = time.perf_counter()
-    gen = _clean(MODEL.generate(f"{a}{op}{b}=", max_new=12, temperature=0.1))
+    model_text = None
+    if MODEL is not None:
+        expr = fmt_expr(a, op, b)
+        q = f"сколько будет {expr}?"
+        gen = decode(MODEL.generate([BOS] + encode(q), max_new=len(gold) + len(expr) + 8))
+        # извлекаем хвост после '=' если он есть
+        tail = gen.split("=", 1)[1].strip() if "=" in gen else gen.strip()
+        if tail and all(ch in "0123456789.-" for ch in tail):
+            model_text = tail
     ms = (time.perf_counter() - t0) * 1000
-    ok = gen == gold
-    ans = f"{a} {op} {b} = {gold}" if ok else f"{a} {op} {b} = {gold}"
-    return {"answer": ans, "model": ok, "ms": round(ms, 1), "gen": gen, "gold": gold}
+    if model_text is not None and model_text == gold:
+        reply = f"{fmt_expr(a, op, b)} = {gold}"
+        source = "модель ✓ (совпало с эталоном)"
+    elif model_text is not None:
+        reply = f"{fmt_expr(a, op, b)} = {gold}"
+        source = f"эталон (модель ответила '{model_text}' — исправлено)"
+    else:
+        reply = f"{fmt_expr(a, op, b)} = {gold}"
+        source = "эталонный калькулятор"
+    return {"reply": reply, "source": source, "ms": round(ms, 1)}
 
 
 class Handler(BaseHTTPRequestHandler):
-    def _send(self, code: int, body: bytes, ctype: str) -> None:
+    def _json(self, obj, code=200):
+        data = json.dumps(obj, ensure_ascii=False).encode()
         self.send_response(code)
-        self.send_header("Content-Type", ctype)
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
         self.end_headers()
-        self.wfile.write(body)
+        self.wfile.write(data)
 
-    def do_GET(self) -> None:  # noqa: N802
+    def do_GET(self):
         if self.path in ("/", "/index.html"):
-            self._send(200, INDEX_HTML.read_bytes(), "text/html; charset=utf-8")
+            with open(HTML_PATH, "rb") as f:
+                data = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
         elif self.path == "/api/health":
-            info = {"ready": MODEL is not None, "ckpt": str(CKPT)}
-            self._send(200, json.dumps(info).encode(), "application/json")
+            self._json({"ok": True, "model_loaded": MODEL is not None,
+                        "holdout_acc": META.get("holdout_acc", -1.0)})
         else:
-            self._send(404, b'{"error":"not found"}', "application/json")
+            self._json({"error": "not found"}, 404)
 
-    def do_POST(self) -> None:  # noqa: N802
+    def do_POST(self):
         if self.path != "/api/chat":
-            self._send(404, b'{"error":"not found"}', "application/json")
+            self._json({"error": "not found"}, 404)
             return
+        n = int(self.headers.get("Content-Length", 0))
         try:
-            n = int(self.headers.get("Content-Length", 0))
-            payload = json.loads(self.rfile.read(n) or b"{}")
-            msg = str(payload.get("message", ""))[:120]
-            if MODEL is None:
-                raise RuntimeError("модель не загружена")
-            res = answer(msg)
-            self._send(200, json.dumps(res, ensure_ascii=False).encode(), "application/json")
-        except Exception as e:  # noqa: BLE001
-            self._send(500, json.dumps({"error": str(e)}).encode(), "application/json")
+            body = json.loads(self.rfile.read(n).decode())
+        except Exception:
+            self._json({"error": "bad json"}, 400)
+            return
+        self._json(answer(str(body.get("message", ""))))
 
-    def log_message(self, fmt: str, *args) -> None:  # тихий лог
-        sys.stderr.write("[chat] " + (fmt % args) + "\n")
+    def log_message(self, fmt, *args):
+        pass
 
 
-def main() -> int:
-    global MODEL
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--port", type=int, default=8091)
-    ap.add_argument("--host", default="0.0.0.0")  # noqa: S104
-    args = ap.parse_args()
-    if not CKPT.exists():
-        print("Модель не найдена. Обучи её:  python -m iski.chat.trainer")
-        return 1
-    MODEL = load_model(CKPT)
-    srv = ThreadingHTTPServer((args.host, args.port), Handler)
-    print(f"ISKI Chat готов: http://localhost:{args.port}/  (Ctrl+C — стоп)")
-    try:
-        srv.serve_forever()
-    except KeyboardInterrupt:
-        print("\nостановлен")
-    return 0
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--port", type=int, default=8091)
+    args = p.parse_args()
+    loaded = load_model()
+    print(f"[chat] модель: {'загружена, holdout=' + format(META.get('holdout_acc', 0), '.2%') if loaded else 'нет чекпойнта — работаю от эталона'}")
+    srv = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
+    print(f"[chat] веб-морда: http://localhost:{args.port}/")
+    srv.serve_forever()
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

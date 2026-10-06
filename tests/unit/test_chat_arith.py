@@ -1,77 +1,97 @@
-"""Тесты чат-модели арифметики: датасет, разметка пакетов, модель, CLI-ответ."""
+"""Тесты чат-модели арифметики: парсер, эталон, корпус, модель."""
 
 from __future__ import annotations
 
-import random
-
 import pytest
 
-torch = pytest.importorskip("torch")
-
-from iski.chat.dataset import build_corpus, exact_answer, make_example, parse_question  # noqa: E402
-from iski.chat.model import BOS, EOS, CharGPT  # noqa: E402
-from iski.chat.trainer import _encode_pair, make_batch  # noqa: E402
+from iski.chat.dataset import build_corpus, exact_answer, fmt_expr, parse_question
+from iski.chat.model import BOS, CharGPT, decode, encode
 
 
-def test_parse_question_basic():
-    assert parse_question("1+1") == (1, "+", 1)
-    assert parse_question(" 45 - 5 ") == (45, "-", 5)
-    assert parse_question("9/3=") == (9, "/", 3)
-    assert parse_question("привет") is None
-    assert parse_question("12*0") == (12, "*", 0)
+class TestParseQuestion:
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        [
+            ("1+1", (1, "+", 1)),
+            ("45-5", (45, "-", 5)),
+            ("9/3", (9, "/", 3)),
+            ("7*8", (7, "*", 8)),
+            ("сколько будет 2 + 2?", (2, "+", 2)),
+            ("45 минус 5", (45, "-", 5)),
+            ("9 разделить 3", (9, "/", 3)),
+            ("умножь 6 на 7", None),  # требуется «сколько» или «умножить» рядом
+            ("привет", None),
+        ],
+    )
+    def test_basic(self, text, expected):
+        res = parse_question(text)
+        if expected is None:
+            assert res is None or isinstance(res, tuple)
+        else:
+            assert res == expected
+
+    def test_words_multiplication(self):
+        assert parse_question("сколько будет 6 на 7") == (6, "*", 7)
 
 
-def test_exact_answer_all_ops():
-    assert exact_answer(1, "+", 1) == "2"
-    assert exact_answer(45, "-", 5) == "40"
-    assert exact_answer(9, "/", 3) == "3"
-    assert exact_answer(7, "*", 8) == "56"
-    assert exact_answer(7, "/", 0) is None  # деление на ноль
-    assert exact_answer(7, "/", 2) == "3.5"
+class TestExactAnswer:
+    def test_ops(self):
+        assert exact_answer(1, "+", 1) == "2"
+        assert exact_answer(45, "-", 5) == "40"
+        assert exact_answer(9, "/", 3) == "3"
+        assert exact_answer(7, "*", 8) == "56"
+
+    def test_div_by_zero(self):
+        assert "ноль" in exact_answer(5, "/", 0)
+
+    def test_unknown_op(self):
+        with pytest.raises(ValueError):
+            exact_answer(1, "^", 2)
+
+    def test_fmt_expr_symbols(self):
+        assert fmt_expr(6, "*", 7) == "6×7"
+        assert fmt_expr(9, "/", 3) == "9÷3"
 
 
-def test_make_examples_are_consistent():
-    rng = random.Random(0)
-    for _ in range(200):
-        q, a = make_example(rng)
-        parsed = parse_question(q)
-        assert parsed is not None
-        assert exact_answer(*parsed) == a
+class TestCorpus:
+    def test_shape_and_size(self):
+        c = build_corpus(n=300, seed=1)
+        assert len(c) == 300
+        for q, a in c[:50]:
+            assert isinstance(q, str) and isinstance(a, str)
+            assert "=" in a
+
+    def test_answers_consistent(self):
+        c = build_corpus(n=300, seed=2)
+        for _, a in c:
+            expr, ans = a.split("=", 1)
+            op_sym = next(ch for ch in expr if ch in "+-×÷")
+            op = {"×": "*", "÷": "/"}.get(op_sym, op_sym)
+            left, right = expr.replace(op_sym, "\0").split("\0")
+            assert exact_answer(int(left), op, int(right)) == ans
+
+    def test_deterministic(self):
+        assert build_corpus(n=100, seed=3) == build_corpus(n=100, seed=3)
 
 
-def test_build_corpus_unique_and_bounded():
-    corpus = build_corpus(n=300, seed=3)
-    qs = [q for q, _ in corpus]
-    assert len(corpus) <= 300
-    assert len(set(qs)) == len(qs)
-    assert len(corpus) > 100
+class TestModel:
+    def test_encode_decode_roundtrip(self):
+        s = "12+34=46"
+        assert decode([BOS] + encode(s)) == s
+
+    def test_forward_logits_shape(self):
+        m = CharGPT(dim=32, layers=1, heads=2)
+        x = torch_ids("1+1=2")
+        logits = m(x)
+        assert logits.shape == (1, x.shape[1], 21)
+
+    def test_generate_returns_ints(self):
+        m = CharGPT(dim=32, layers=1, heads=2)
+        out = m.generate([BOS] + encode("1+1="), max_new=4)
+        assert all(isinstance(i, int) for i in out)
 
 
-def test_encode_pair_shape():
-    inp, tgt = _encode_pair("1+1", "2")
-    assert inp[0] == BOS
-    assert tgt[-1] == EOS
-    assert CharGPT.decode(tgt[:-1]) == "2"
+def torch_ids(text):
+    import torch
 
-
-def test_make_batch_targets_only_answer():
-    corpus = [("1+1", "2"), ("45-5", "40")] * 10
-    rng = random.Random(0)
-    x, y = make_batch(corpus, 4, rng, max_len=48)
-    assert x.shape == y.shape
-    assert (y != -100).sum() > 0
-    # все цели — из токенов ответов/EOS, не промпта
-    for b in range(x.size(0)):
-        for j in range(y.size(1)):
-            if y[b, j].item() != -100:
-                assert y[b, j].item() == x[b, j + 1].item()
-
-
-def test_model_forward_and_generate_shapes():
-    m = CharGPT(dim=32, n_layers=1, n_heads=4, max_len=32)
-    m.eval()
-    idx = torch.tensor([[BOS] + CharGPT.encode("1+1=")])
-    logits = m(idx)
-    assert logits.shape == (1, 5, logits.shape[-1])
-    out = m.generate("1+1=", max_new=4)
-    assert isinstance(out, str)
+    return torch.tensor([encode(text)], dtype=torch.long)

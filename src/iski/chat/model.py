@@ -1,122 +1,88 @@
-"""Мини-языковая модель для чата: цифры и арифметика (+ - * /).
-
-Архитектура: char-level GPT (embedding -> N transformer blocks -> head),
-обучается на синтетическом корпусе примеров вида "1+2=3" и отвечает
-автогретивно. Модель небольшая, обучается за секунды на CPU.
-"""
-
+"""Char-level GPT для арифметических ответов (цифры, + - * / =)."""
 from __future__ import annotations
 
 import math
-
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-# Словарь: служебные токены + символы арифметики.
-SPECIAL = ["<pad>", "<eos>", "<bos>"]
+# Служебные токены первыми: pad=0, bos=1, eos=2
+SPECIAL = ["<pad>", "<bos>", "<eos>"]
 CHARS = list("0123456789+-*/=.? ")
 VOCAB = SPECIAL + CHARS
-STOI = {c: i for i, c in enumerate(VOCAB)}
-ITOS = {i: c for c, i in STOI.items()}
-PAD, EOS, BOS = STOI["<pad>"], STOI["<eos>"], STOI["<bos>"]
-VSIZE = len(VOCAB)
+stoi = {c: i for i, c in enumerate(VOCAB)}
+itos = {i: c for c, i in stoi.items()}
+PAD, BOS, EOS = 0, 1, 2
 
 
-class CausalSelfAttention(nn.Module):
-    def __init__(self, dim: int, n_heads: int, dropout: float = 0.0) -> None:
-        super().__init__()
-        assert dim % n_heads == 0
-        self.n_heads = n_heads
-        self.d_head = dim // n_heads
-        self.qkv = nn.Linear(dim, 3 * dim)
-        self.proj = nn.Linear(dim, dim)
-        self.drop = nn.Dropout(dropout)
+def encode(text: str) -> list[int]:
+    return [stoi.get(ch, 0) for ch in text]
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        b, t, d = x.shape
-        qkv = self.qkv(x).view(b, t, 3, self.n_heads, self.d_head)
-        q, k, v = (qkv[:, :, i].transpose(1, 2) for i in range(3))
-        mask = torch.triu(torch.ones(t, t, device=x.device, dtype=torch.bool), diagonal=1)
-        p = self.drop.p if self.training else 0.0
-        y = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=p)
-        y = y.transpose(1, 2).contiguous().view(b, t, d)
-        return self.proj(y)
+
+def decode(ids) -> str:
+    out = []
+    for i in ids:
+        i = int(i)
+        if i == EOS:
+            break
+        if i in (PAD, BOS):
+            continue
+        out.append(itos.get(i, ""))
+    return "".join(out)
 
 
 class Block(nn.Module):
-    def __init__(self, dim: int, n_heads: int, dropout: float = 0.0) -> None:
+    def __init__(self, dim: int, heads: int):
         super().__init__()
         self.ln1 = nn.LayerNorm(dim)
-        self.attn = CausalSelfAttention(dim, n_heads, dropout)
+        self.attn = nn.MultiheadAttention(dim, heads, batch_first=True)
         self.ln2 = nn.LayerNorm(dim)
-        self.mlp = nn.Sequential(
-            nn.Linear(dim, 4 * dim),
-            nn.GELU(),
-            nn.Linear(4 * dim, dim),
-            nn.Dropout(dropout),
+        self.ff = nn.Sequential(
+            nn.Linear(dim, 4 * dim), nn.GELU(), nn.Linear(4 * dim, dim)
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x + self.attn(self.ln1(x))
-        x = x + self.mlp(self.ln2(x))
+        T = x.size(1)
+        mask = torch.full((T, T), float("-inf"), device=x.device)
+        mask = torch.triu(mask, diagonal=1)
+        h = self.ln1(x)
+        a, _ = self.attn(h, h, h, attn_mask=mask, need_weights=False)
+        x = x + a
+        x = x + self.ff(self.ln2(x))
         return x
 
 
 class CharGPT(nn.Module):
-    """Char-level GPT с sin-cos позиционным embedding."""
-
-    def __init__(self, dim: int = 64, n_layers: int = 2, n_heads: int = 4, max_len: int = 48) -> None:
+    def __init__(self, dim: int = 96, layers: int = 3, heads: int = 4):
         super().__init__()
-        self.max_len = max_len
-        self.tok_emb = nn.Embedding(VSIZE, dim)
-        self.pos_emb = nn.Parameter(self._sin_cos(max_len, dim), requires_grad=False)
-        self.blocks = nn.Sequential(*[Block(dim, n_heads) for _ in range(n_layers)])
-        self.ln_f = nn.LayerNorm(dim)
-        self.head = nn.Linear(dim, VSIZE)
-
-    @staticmethod
-    def _sin_cos(T: int, D: int) -> torch.Tensor:
-        pos = torch.arange(T).unsqueeze(1).float()
-        div = torch.exp(torch.arange(0, D, 2).float() * (-math.log(10000.0) / D))
-        pe = torch.zeros(T, D)
-        pe[:, 0::2] = torch.sin(pos * div)
-        pe[:, 1::2] = torch.cos(pos * div[: pe[:, 1::2].shape[1]])
-        return pe
+        self.dim = dim
+        max_pos = 64
+        self.tok = nn.Embedding(len(VOCAB), dim)
+        self.pos = nn.Embedding(max_pos, dim)
+        self.blocks = nn.ModuleList([Block(dim, heads) for _ in range(layers)])
+        self.lnf = nn.LayerNorm(dim)
+        self.head = nn.Linear(dim, len(VOCAB), bias=False)
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
-        b, t = idx.shape
-        x = self.tok_emb(idx) + self.pos_emb[:t].unsqueeze(0)
-        x = self.blocks(x)
-        return self.head(self.ln_f(x))
-
-    # ---------- кодирование ----------
-    @staticmethod
-    def encode(text: str) -> list[int]:
-        return [STOI.get(c, PAD) for c in text]
-
-    @staticmethod
-    def decode(ids: list[int]) -> str:
-        out = []
-        for i in ids:
-            if i == EOS:
-                break
-            if i in (PAD, BOS):
-                continue
-            out.append(ITOS[i])
-        return "".join(out)
+        B, T = idx.shape
+        pos = torch.arange(T, device=idx.device).clamp(max=self.pos.num_embeddings - 1)
+        x = self.tok(idx) + self.pos(pos)
+        for blk in self.blocks:
+            x = blk(x)
+        return self.head(self.lnf(x))
 
     @torch.no_grad()
-    def generate(self, prompt: str, max_new: int = 16, temperature: float = 0.2) -> str:
-        """Автогрегативная генерация продолжения после промпта."""
+    def generate(self, prompt_ids: list[int], max_new: int = 24) -> list[int]:
         self.eval()
-        ids = [BOS] + self.encode(prompt)
-        start = len(ids)
+        ids = torch.tensor([prompt_ids], dtype=torch.long)
+        dev = next(self.parameters()).device
+        ids = ids.to(dev)
         for _ in range(max_new):
-            ctx = ids[-self.max_len :]
-            logits = self.forward(torch.tensor([ctx]))[0, -1] / max(temperature, 1e-6)
-            nxt = int(logits.argmax())
-            if nxt == EOS:
+            ctx = ids[:, -self.pos.num_embeddings :]
+            logits = self(ctx)[:, -1, :]
+            logits[:, PAD] = -math.inf
+            logits[:, BOS] = -math.inf
+            nxt = logits.argmax(dim=-1, keepdim=True)
+            ids = torch.cat([ids, nxt], dim=1)
+            if int(nxt) == EOS:
                 break
-            ids.append(nxt)
-        return self.decode(ids[start:])
+        return ids[0, len(prompt_ids):].tolist()
