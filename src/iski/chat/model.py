@@ -1,9 +1,11 @@
 """Char-level GPT для арифметических ответов (цифры, + - * / =)."""
+
 from __future__ import annotations
 
 import math
+
 import torch
-import torch.nn as nn
+from torch import nn
 
 # Служебные токены первыми: pad=0, bos=1, eos=2
 SPECIAL = ["<pad>", "<bos>", "<eos>"]
@@ -63,7 +65,7 @@ class CharGPT(nn.Module):
         self.head = nn.Linear(dim, len(VOCAB), bias=False)
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
-        B, T = idx.shape
+        _, T = idx.shape
         pos = torch.arange(T, device=idx.device).clamp(max=self.pos.num_embeddings - 1)
         x = self.tok(idx) + self.pos(pos)
         for blk in self.blocks:
@@ -85,4 +87,4 @@ class CharGPT(nn.Module):
             ids = torch.cat([ids, nxt], dim=1)
             if int(nxt) == EOS:
                 break
-        return ids[0, len(prompt_ids):].tolist()
+        return ids[0, len(prompt_ids) :].tolist()

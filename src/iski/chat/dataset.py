@@ -1,4 +1,5 @@
 """Синтетический корпус арифметических диалогов и парсер вопросов."""
+
 from __future__ import annotations
 
 import random
@@ -26,10 +27,21 @@ def parse_question(text: str) -> tuple[float, str, float] | None:
         a, op, b = float(m.group(1)), m.group(2), float(m.group(3))
         return (int(a) if a == int(a) else a, op, int(b) if b == int(b) else b)
     # русские слова-операторы
-    m = re.search(r"(-?\d+(?:\.\d+)?)\s*(плюс|минус|умножить|умножь|разделить|раздели|поделить)\s*(-?\d+(?:\.\d+)?)", t)
+    m = re.search(
+        r"(-?\d+(?:\.\d+)?)\s*(плюс|минус|умножить|умножь|разделить|раздели|поделить)\s*(-?\d+(?:\.\d+)?)",
+        t,
+    )
     if m:
         word = m.group(2)
-        op = {"плюс": "+", "минус": "-", "умножить": "*", "умножь": "*", "разделить": "/", "раздели": "/", "поделить": "/"}[word]
+        op = {
+            "плюс": "+",
+            "минус": "-",
+            "умножить": "*",
+            "умножь": "*",
+            "разделить": "/",
+            "раздели": "/",
+            "поделить": "/",
+        }[word]
         return (_num(m.group(1)), op, _num(m.group(3)))
     # «сколько будет 9 / 3» уже покрыто первым regex; «a на b» для умножения
     m = re.search(r"(-?\d+)\s+на\s+(-?\d+)", t)
@@ -65,7 +77,9 @@ def fmt_expr(a: float, op: str, b: float) -> str:
     return f"{a}{disp}{b}"
 
 
-def build_corpus(n: int = 6000, seed: int = 7, max_digits: int = 2) -> list[tuple[str, str]]:
+def build_corpus(
+    n: int = 6000, seed: int = 7, max_digits: int = 2
+) -> list[tuple[str, str]]:
     """Корпус (вопрос, ответ-строка). Ответ содержит '=результат' в конце."""
     rng = random.Random(seed)
     seen: set[tuple] = set()

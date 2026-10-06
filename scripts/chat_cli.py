@@ -14,8 +14,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from iski.chat.dataset import exact_answer, parse_question  # noqa: E402
-from iski.chat.trainer import load_model  # noqa: E402
+from iski.chat.dataset import exact_answer, parse_question
+from iski.chat.trainer import load_model
 
 WELCOME = """
 ISKI Chat — арифметический бот (цифры, + - * /).

@@ -1,4 +1,5 @@
 """Обучение чат-модели арифметики (next-token, loss только по ответу)."""
+
 from __future__ import annotations
 
 import argparse
@@ -6,7 +7,7 @@ import math
 import random
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from iski.chat.dataset import build_corpus
 from iski.chat.model import BOS, EOS, PAD, CharGPT, encode
@@ -85,8 +86,14 @@ def train(
             nb += 1
             step += 1
             if step % 400 == 0:
-                print(f"epoch {ep+1}/{epochs} loss={tot/max(nb,1):.4f} step={step}", flush=True)
-        print(f"epoch {ep+1}/{epochs} loss={tot/max(nb,1):.4f} step={step}", flush=True)
+                print(
+                    f"epoch {ep + 1}/{epochs} loss={tot / max(nb, 1):.4f} step={step}",
+                    flush=True,
+                )
+        print(
+            f"epoch {ep + 1}/{epochs} loss={tot / max(nb, 1):.4f} step={step}",
+            flush=True,
+        )
 
     acc = evaluate(model, hold_s)
     print(f"accuracy on holdout: {acc:.2%}", flush=True)
@@ -94,8 +101,16 @@ def train(
     import os
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    torch.save({"state_dict": model.state_dict(), "dim": dim, "layers": layers,
-                "heads": heads, "holdout_acc": acc}, out_path)
+    torch.save(
+        {
+            "state_dict": model.state_dict(),
+            "dim": dim,
+            "layers": layers,
+            "heads": heads,
+            "holdout_acc": acc,
+        },
+        out_path,
+    )
     print(f"saved checkpoint -> {out_path}", flush=True)
     return model, acc
 
