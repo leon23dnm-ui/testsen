@@ -1,13 +1,31 @@
+.venv/
+.tools/
 __pycache__/
 *.py[cod]
+*.pyo
 *.egg-info/
 .eggs/
-build/
-dist/
-.coverage
 .pytest_cache/
 .ruff_cache/
-models/*.pt
+build/
+dist/
+
+# Coverage
+.coverage
+
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# Logs (including experiment logs)
+logs/
 *.log
 /tmp/
-.venv/
+
+# Model checkpoints
+models/*.pt
+
+make_dl.zip
+iski-m0-v3.0.tar.gz
+iski-m0-v3.0.tar.gz.sha256

@@ -46,6 +46,8 @@ class _Cfg:
     eta_g = 0.05
     g_min = 0.5
     g_max = 5.0
+    theta_form = 0.5
+    w_mem_init = 0.3
 
 
 def _make_state():

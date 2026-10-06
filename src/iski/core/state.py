@@ -137,11 +137,11 @@ class OmegaState:
                 self.store.append(single[1])
             elif action == "rho":
                 i, rho = single[1], single[2]
-                self.store[i]["rho"] = rho
+                self.store[i].rho = rho
             elif action == "status":
                 i, st, t = single[1], single[2], single[3]
-                self.store[i]["status"] = st
-                self.store[i]["status_t"] = t
+                self.store[i].status = st
+                self.store[i].status_t = t
             elif action == "del":
                 i = single[1]
                 self.store.pop(i)

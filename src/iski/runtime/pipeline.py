@@ -14,6 +14,7 @@ from iski.dynamics.update import field_update
 from iski.learning.eligibility import update_eligibility
 from iski.learning.plasticity import plasticity_delta
 from iski.memory.forgetting import forget_decision
+from iski.memory.formation import create_memory, formation_decision
 from iski.memory.maintenance import archive_sweep
 from iski.memory.modes import update_modes
 from iski.memory.store import MemoryStore
@@ -56,6 +57,8 @@ class Pipeline:
         "eta_g",
         "g_min",
         "g_max",
+        "theta_form",
+        "w_mem_init",
     )
 
     def __init__(self, state, clocks, cfg, head, hbuf, rng):
@@ -243,10 +246,23 @@ class Pipeline:
                 )
             )
             deltas.append(homeostasis_update(self.state.S, self.state.X, self.cfg))
+        dM_ops = []
+        if self.clocks.active(t, "medium") and e_in is not None:
+            decision, k = formation_decision(
+                e_in,
+                self.state.store,
+                self.cfg.theta_form,
+                self.cfg.sigma,
+                self.cfg.M_max,
+            )
+            if decision == "form":
+                dM_ops.append(("add", create_memory(e_in, X_next_t, self.cfg, t)))
+            elif k >= 0:
+                self.state.store[k].last_access = t
         if e_in is not None:
             dE = self._e_align(E, e_in)
             deltas.append(Delta(dE=dE))
-        dM_ops = self._memory_lifecycle(t, sal, eps)
+        dM_ops += self._memory_lifecycle(t, sal, eps)
         if dM_ops:
             deltas.append(Delta(dM=dM_ops))
 
@@ -265,6 +281,11 @@ class Pipeline:
         # 15 metrics
         self._append(15)
         metrics = compute_metrics(cand, eps, e_in, self.cfg)
+        recall_count = sum(
+            1
+            for item in self.state.store
+            if float(np.max(kernel_similarity(E, item.e, self.cfg.sigma))) > 0.3
+        )
         metrics.update(
             tick_metrics(
                 F_ext,
@@ -273,6 +294,8 @@ class Pipeline:
                 cand.graph,
                 cand.S,
                 cand.X,
+                float(np.linalg.norm(F_mem)),
+                float(recall_count),
             )
         )
 

@@ -26,6 +26,7 @@ Workflow (Dialog Coding Cycle), политики Council/Router/Expert/лими�
 
 ## Local conventions
 - Код оформляется по стилю ruff с длиной строки по умолчанию.
+- Массовые правки файлов тестов/конфигов — только exact-match заменами с pre/post diff; при любом повреждении — немедленный restore из HEAD и перевнесение правок точными edits; regex-булк по тестам запрещён (инцидент T27).
 - Git CLI не установлен; git-операции — через dulwich в `.venv` (`.venv\Scripts\python.exe -c "from dulwich import porcelain; ..."`). Remote: `git@github.com:INKkripto/semantic.git`, ветка `main`.
 - `make` лежит в `.tools\make\bin\make.exe`; для `make test/lint` нужен `.venv\Scripts` в PATH.
 - Каждая сессия решает ровно одно задание из `iski-tasks-v3.0/tasks/T01..T21`.
