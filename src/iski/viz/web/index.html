@@ -32,7 +32,9 @@ td:first-child{color:var(--dim)}
   <b>ISKI M0 · динамика</b>
   <span id="phase" class="badge warm">warm</span>
   <span id="tick" style="color:var(--dim)">t=0</span>
-  <button id="run">▶ run</button>
+  <button id="run">⏸ live</button>
+  <input type="range" id="speed" min="1" max="60" value="12" style="width:90px">
+  <span id="rate" style="color:var(--dim)">12 t/s</span>
   <button data-step="1">+1</button>
   <button data-step="10">+10</button>
   <button data-step="50">+50</button>
@@ -59,7 +61,7 @@ td:first-child{color:var(--dim)}
 <script>
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const spark=document.getElementById('spark'),sctx=spark.getContext('2d');
-let S=null,running=false,pulses=[],speed=1;
+let S=null,pulses=[];
 const $=id=>document.getElementById(id);
 
 function pos(i,N,W,H){ // круговая раскладка
@@ -71,11 +73,14 @@ function fit(){const v=$('view');cv.width=v.clientWidth;cv.height=v.clientHeight
 window.onresize=fit;
 
 async function api(p,body){const r=await fetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:null);return r.json();}
-async function step(n){S=await api('/api/state?step='+n);spawnPulses();draw();side();}
-function spawnPulses(){
-  S.edges.forEach((e,i)=>{const f=S.flux[i];if(Math.abs(f)>1e-4)
-    pulses.push({s:e[0],d:e[1],w:f,p:0,dur:20+S.delay[i]*14});});
-  if(pulses.length>300)pulses=pulses.slice(-300);
+async function step(n){S=await api('/api/state?step='+n);spawnPulsesLog();}
+async function poll(){try{S=await api('/api/state?step=0');spawnPulsesLog();side()}catch(e){}}
+function spawnPulsesLog(){
+  for(const[t,fl]of(S.flux_log||[])){
+    S.edges.forEach((e,i)=>{const f=fl[i];if(Math.abs(f)>1e-4)
+      pulses.push({s:e[0],d:e[1],w:f,p:0,dur:18+S.delay[i]*12});});
+  }
+  if(pulses.length>400)pulses=pulses.slice(-400);
 }
 
 function draw(){
@@ -136,7 +141,8 @@ function draw(){
 function side(){
   $('phase').textContent=S.phase+(S.inject_left?` +вход(${S.inject_left})`:'');
   $('phase').className='badge '+(S.phase==='warm'?'warm':'auto');
-  $('tick').textContent='t='+S.t;
+  $('tick').textContent='t='+S.t+' · '+(S.rate>0?('live @'+S.rate+' t/s'):'paused')+(S.model==='model_m1.yaml'?' · M1':'');
+  $('run').textContent=S.rate>0?'⏸ live':'▶ resume';
   const m=S.metrics;
   $('met').innerHTML=['activity','H','s_ed','rho_j','eps_norm','mean_mu','mean_theta','mean_g','mem_fro','recall','w_fro','gate_frac']
     .map(k=>`<tr><td>${k}</td><td>${m[k]!==undefined?m[k]:'—'}</td></tr>`).join('');
@@ -151,14 +157,15 @@ function side(){
     line(p=>Math.abs(p.activity||0),mxA,'#58a6ff');line(p=>p.H||0,mxH,'#bc8cff');}
 }
 
-async function loop(){if(running){try{await step(speed)}catch(e){console.log(e)}}requestAnimationFrame(loop)}
-$('run').onclick=()=>{running=!running;$('run').textContent=running?'⏸ pause':'▶ run'};
+function anim(){draw();requestAnimationFrame(anim)}
+$('run').onclick=async()=>{await api('/api/rate',{rate:S&&S.rate>0?0:+$('speed').value});};
+$('speed').oninput=e=>{$('rate').textContent=e.target.value+' t/s';api('/api/rate',{rate:+e.target.value})};
 document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>step(+b.dataset.step));
 document.querySelectorAll('.inj').forEach(b=>b.onclick=()=>api('/api/inject',{word:b.dataset.w,dur:20}));
 $('auto').onchange=e=>api('/api/scenario',{auto:e.target.checked});
-$('reset').onclick=async()=>{await api('/api/reset',{eta_plast:+$('eta').value,Lambda:+$('lam').value,eta_g:+$('etag').value});pulses=[];S=await api('/api/state?step=0');draw();side();};
+$('reset').onclick=async()=>{await api('/api/reset',{eta_plast:+$('eta').value,Lambda:+$('lam').value,eta_g:+$('etag').value});pulses=[];S=await api('/api/state?step=0');side();};
 
-fit();(async()=>{S=await api('/api/state?step=0');draw();side();loop()})();
+fit();(async()=>{S=await api('/api/state?step=0');side();anim();setInterval(poll,120)})();
 </script>
 </body>
 </html>

@@ -38,6 +38,22 @@ def test_edge_flux_shape_matches_propagate():
     assert eng.last_flux.shape == g.w_eff().shape
 
 
+def test_flux_log_drains_per_tick():
+    eng = Engine()
+    eng.step(3)
+    snap = eng.step(2)
+    assert [t for t, _ in snap["flux_log"]] == [3, 4]
+    assert eng.step(1)["flux_log"][0][0] == 5
+    assert eng.step(1)["flux_log"][0][0] == 6
+
+
+def test_live_rate_controls():
+    eng = Engine()
+    assert eng.rate == 12.0
+    eng.rate = 0
+    assert eng.rate == 0
+
+
 def test_make_cfg_keys():
     cfg = make_cfg()
     for k in ("N", "D", "K", "warm_ticks", "auto_ticks", "M_max", "theta_form"):

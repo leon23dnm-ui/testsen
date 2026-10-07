@@ -16,6 +16,8 @@ import argparse
 import json
 import os
 import sys
+import threading
+import time
 import types
 from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -70,6 +72,9 @@ class Engine:
         self.inject_vec = None
         self.hist = deque(maxlen=HIST_LEN)
         self.last_flux = np.zeros(len(self.pipe.state.graph.w_plus))
+        self.flux_log = []  # [(t, flux_list)] с момента последнего snapshot
+        self.rate = 12.0  # тиков/сек, 0 = пауза
+        self.lock = threading.Lock()
 
     # вход на тик: инъекция имеет приоритет над сценарием
     def _input_for(self, t: int):
@@ -92,23 +97,37 @@ class Engine:
             fl[mask] = w[mask] * xd[src_all[mask]]
         return fl
 
+    def _tick_once(self):
+        st = self.pipe.state
+        self.last_flux = self._edge_flux()
+        e_in, conf = self._input_for(st.tick)
+        out = self.pipe.tick(e_in, conf)
+        self.flux_log.append((st.tick, self.last_flux.tolist()))
+        if self.pipe.state.tick > 0 and self.pipe.state.tick % self.cfg.T_maint == 0:
+            self.pipe.maintenance()
+        m = out["metrics"]
+        self.hist.append({"t": st.tick, "activity": m.get("activity"), "H": m.get("H")})
+        return out
+
     def step(self, n: int = 1) -> dict:
         out = None
-        for _ in range(max(1, int(n))):
-            st = self.pipe.state
-            self.last_flux = self._edge_flux()
-            e_in, conf = self._input_for(st.tick)
-            out = self.pipe.tick(e_in, conf)
-            if (
-                self.pipe.state.tick > 0
-                and self.pipe.state.tick % self.cfg.T_maint == 0
-            ):
-                self.pipe.maintenance()
-            m = out["metrics"]
-            self.hist.append(
-                {"t": st.tick, "activity": m.get("activity"), "H": m.get("H")}
-            )
+        with self.lock:
+            for _ in range(max(1, int(n))):
+                out = self._tick_once()
         return self.snapshot(out)
+
+    def run_loop(self) -> None:
+        """Фоновый тикер: модель работает в реальном времени, rate тиков/сек."""
+        while True:
+            rate = self.rate
+            if rate <= 0:
+                time.sleep(0.05)
+                continue
+            t0 = time.perf_counter()
+            with self.lock:
+                self._tick_once()
+            dt = time.perf_counter() - t0
+            time.sleep(max(0.0, 1.0 / rate - dt))
 
     def snapshot(self, out: dict | None) -> dict:
         st = self.pipe.state
@@ -144,6 +163,8 @@ class Engine:
             "w": [round(float(v), 4) for v in g.w_eff()],
             "delay": [int(v) for v in g.delays],
             "flux": [round(float(v), 6) for v in self.last_flux],
+            "flux_log": self.drain_flux(),
+            "rate": self.rate,
             "mem": mem,
             "gws": [bool(v) for v in (out["gws"] if out else np.zeros(N))],
             "att": [round(float(v), 4) for v in (out["att"] if out else np.zeros(N))],
@@ -154,6 +175,12 @@ class Engine:
             },
             "hist": list(self.hist),
         }
+
+    def drain_flux(self):
+        with self.lock:
+            out = self.flux_log
+            self.flux_log = []
+        return [(t, [round(float(v), 6) for v in fl]) for t, fl in out[-60:]]
 
     def inject(self, word: str, dur: int = 20) -> None:
         if word not in WORDS:
@@ -231,6 +258,9 @@ class Handler(BaseHTTPRequestHandler):
         elif u.path == "/api/scenario":
             ENGINE.auto = bool(b.get("auto", True))
             self._json({"ok": True, "auto": ENGINE.auto})
+        elif u.path == "/api/rate":
+            ENGINE.rate = max(0.0, min(200.0, float(b.get("rate", 12))))
+            self._json({"ok": True, "rate": ENGINE.rate})
         else:
             self._json({"error": "not found"}, 404)
 
@@ -249,6 +279,8 @@ def main():
     )
     args = p.parse_args()
     _init_engine(args.model)
+    ticker = threading.Thread(target=ENGINE.run_loop, daemon=True)
+    ticker.start()
     srv = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
     print(f"[viz] морда: http://localhost:{args.port}/")
     srv.serve_forever()
