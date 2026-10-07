@@ -14,3 +14,4 @@
 | MSG-20261007-160000-deviant-desktop-merge-synced | deviant-desktop→coder | status | normal | open | efe6ac8f | — |
 | MSG-20261007-170000-deviant-desktop-chat-fixes | deviant-desktop→coder | status | normal | open | — | chat model/dataset/server, test_chat_arith |
 | MSG-20261007-180000-deviant-desktop-viz-server | deviant-desktop→coder | status | normal | open | — | viz_server, iski/viz, test_viz_server |
+| MSG-20261007-190000-deviant-desktop-m1-scaling | deviant-desktop→coder | status | normal | open | — | model_m1, run_m1, viz_server --model |

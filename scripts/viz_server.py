@@ -38,13 +38,14 @@ WORDS = ["one", "two", "three", "four"]
 HIST_LEN = 400
 
 
-def make_cfg() -> types.SimpleNamespace:
+def make_cfg(model_file: str = "model.yaml") -> types.SimpleNamespace:
     cfg = {}
+    exp = "m1.yaml" if "m1" in model_file else "m0.yaml"
     for rel in (
-        "config/model.yaml",
+        f"config/{model_file}",
         "config/runtime.yaml",
         "config/bootstrap.yaml",
-        "config/experiments/m0.yaml",
+        f"config/experiments/{exp}",
     ):
         with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
             cfg.update(yaml.safe_load(f))
@@ -54,11 +55,12 @@ def make_cfg() -> types.SimpleNamespace:
 class Engine:
     """Обёртка над Pipeline: сценарий warm/auto + инъекции + снапшоты."""
 
-    def __init__(self) -> None:
+    def __init__(self, model_file: str = "model.yaml") -> None:
+        self.model_file = model_file
         self.reset()
 
     def reset(self, eta_plast=0.01, Lambda=0.3, eta_g=0.05) -> None:
-        self.cfg = make_cfg()
+        self.cfg = make_cfg(self.model_file)
         self.cfg.eta_plast = float(eta_plast)
         self.cfg.Lambda = float(Lambda)
         self.cfg.eta_g = float(eta_g)
@@ -128,6 +130,7 @@ class Engine:
         return {
             "t": int(st.tick),
             "phase": "warm" if st.tick < self.cfg.warm_ticks else "auto",
+            "model": self.model_file,
             "auto": self.auto,
             "inject_left": max(0, self.inject_until - st.tick + 1),
             "N": N,
@@ -161,7 +164,13 @@ class Engine:
         self.inject_until = st.tick + max(1, int(dur))
 
 
-ENGINE = Engine()
+ARGS = None
+ENGINE = None
+
+
+def _init_engine(model_file: str) -> None:
+    global ENGINE
+    ENGINE = Engine(model_file)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -232,7 +241,14 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--port", type=int, default=8092)
+    p.add_argument(
+        "--model",
+        default="model.yaml",
+        choices=["model.yaml", "model_m1.yaml"],
+        help="M0 (N=4) или M1 (N=16) конфиг",
+    )
     args = p.parse_args()
+    _init_engine(args.model)
     srv = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
     print(f"[viz] морда: http://localhost:{args.port}/")
     srv.serve_forever()
