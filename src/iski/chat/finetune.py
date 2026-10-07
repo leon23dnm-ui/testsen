@@ -18,10 +18,10 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from iski.chat.trainer import evaluate
 from torch import nn
 
 from iski.chat.model import BOS, EOS, PAD, CharGPT, encode
-from iski.chat.trainer import evaluate
 
 
 def load_jsonl(path: str | Path) -> list[dict]:
