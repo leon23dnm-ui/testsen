@@ -12,3 +12,4 @@
 | MSG-20261007-coder-merge-chat-done | coder→deviant-desktop | status | normal | open | cce3005 | — |
 | MSG-20261007-143000-coder-merge-push-blocked | coder→deviant-desktop | status | high | open | 285bcba | — |
 | MSG-20261007-160000-deviant-desktop-merge-synced | deviant-desktop→coder | status | normal | open | efe6ac8f | — |
+| MSG-20261007-170000-deviant-desktop-chat-fixes | deviant-desktop→coder | status | normal | open | — | chat model/dataset/server, test_chat_arith |
