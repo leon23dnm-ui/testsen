@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from iski.chat.dataset import build_corpus, exact_answer, fmt_expr, parse_question
-from iski.chat.model import BOS, CharGPT, decode, encode
+from iski.chat.model import BOS, VOCAB, CharGPT, decode, encode
 
 
 class TestParseQuestion:
@@ -83,7 +83,7 @@ class TestModel:
         m = CharGPT(dim=32, layers=1, heads=2)
         x = torch_ids("1+1=2")
         logits = m(x)
-        assert logits.shape == (1, x.shape[1], 21)
+        assert logits.shape == (1, x.shape[1], len(VOCAB))
 
     def test_generate_returns_ints(self):
         m = CharGPT(dim=32, layers=1, heads=2)

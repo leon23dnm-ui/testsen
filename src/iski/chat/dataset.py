@@ -106,12 +106,13 @@ def build_corpus(
         except ZeroDivisionError:
             continue
         seen.add(key)
-        resp = f"{fmt_expr(a, op, b)}={ans}"
+        expr = fmt_expr(a, op, b)
+        resp = f"{expr}={ans}"
         phrasings = [
-            f"сколько будет {resp}?",
-            f"{resp}? ответ",
-            f"посчитай {resp}",
-            f"{resp.split('=')[0]} равно чему?",
+            f"сколько будет {expr}?",
+            f"{expr}? ответ",
+            f"посчитай {expr}",
+            f"{expr} равно чему?",
         ]
         variants.append((rng.choice(phrasings), resp))
 

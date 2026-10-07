@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>ISKI M0 — визуализация</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--fg:#c9d1d9;--dim:#8b949e;--exc:#3fb950;--inh:#f85149;--acc:#58a6ff}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--fg);font:13px/1.4 ui-monospace,Consolas,monospace;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+header b{font-size:14px}
+button,select{background:#21262d;color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font:inherit}
+button:hover{border-color:var(--acc)}
+#wrap{flex:1;display:flex;min-height:0}
+#view{flex:1;position:relative;min-width:0}
+canvas{display:block;width:100%;height:100%}
+#side{width:330px;background:var(--panel);border-left:1px solid var(--border);padding:10px 12px;overflow-y:auto;font-size:12px}
+#side h3{font-size:12px;color:var(--dim);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.5px}
+table{border-collapse:collapse;width:100%}
+td{padding:2px 4px;border-bottom:1px solid #21262d}
+td:first-child{color:var(--dim)}
+#nodes td{font-size:11px}
+#spark{width:100%;height:80px;background:#0d1117;border:1px solid var(--border);border-radius:6px}
+.badge{padding:1px 7px;border-radius:8px;font-size:11px}
+.warm{background:#9e6a03;color:#fff}.auto{background:#1f6feb;color:#fff}
+.leg{display:flex;gap:10px;color:var(--dim);font-size:11px;align-items:center}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+</style>
+</head>
+<body>
+<header>
+  <b>ISKI M0 · динамика</b>
+  <span id="phase" class="badge warm">warm</span>
+  <span id="tick" style="color:var(--dim)">t=0</span>
+  <button id="run">⏸ live</button>
+  <input type="range" id="speed" min="1" max="60" value="12" style="width:90px">
+  <span id="rate" style="color:var(--dim)">12 t/s</span>
+  <button data-step="1">+1</button>
+  <button data-step="10">+10</button>
+  <button data-step="50">+50</button>
+  <span style="color:var(--dim)">вход:</span>
+  <button class="inj" data-w="one">one</button><button class="inj" data-w="two">two</button>
+  <button class="inj" data-w="three">three</button><button class="inj" data-w="four">four</button>
+  <label style="color:var(--dim)"><input type="checkbox" id="auto" checked> сценарий</label>
+  <select id="eta"><option>0.001</option><option selected>0.01</option><option>0.1</option></select>
+  <select id="lam"><option>0.2</option><option selected>0.3</option><option>0.4</option><option>0.5</option></select>
+  <select id="etag"><option>0.0</option><option selected>0.05</option></select>
+  <button id="reset">⟲ reset</button>
+  <span class="leg"><span class="dot" style="background:var(--exc)"></span>возбуждение <span class="dot" style="background:var(--inh)"></span>торможение <span class="dot" style="background:var(--acc)"></span>узел</span>
+</header>
+<div id="wrap">
+  <div id="view"><canvas id="cv"></canvas></div>
+  <div id="side">
+    <h3>Метрики тика</h3><table id="met"></table>
+    <h3>Узлы (μ · θ · g)</h3><table id="nodes"></table>
+    <h3>Память (|M|)</h3><table id="mem"></table>
+    <h3>История</h3><canvas id="spark" width="310" height="80"></canvas>
+    <div style="color:var(--dim);font-size:11px;margin-top:4px">синий — activity, фиолетовый — H (норм.)</div>
+  </div>
+</div>
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const spark=document.getElementById('spark'),sctx=spark.getContext('2d');
+let S=null,pulses=[];
+const $=id=>document.getElementById(id);
+
+function pos(i,N,W,H){ // круговая раскладка
+  const cx=W/2,cy=H/2,r=Math.min(W,H)*0.34;
+  const a=-Math.PI/2+2*Math.PI*i/Math.max(N,2);
+  return[cx+r*Math.cos(a),cy+r*Math.sin(a)];
+}
+function fit(){const v=$('view');cv.width=v.clientWidth;cv.height=v.clientHeight;}
+window.onresize=fit;
+
+async function api(p,body){const r=await fetch(p,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:null);return r.json();}
+async function step(n){S=await api('/api/state?step='+n);spawnPulsesLog();}
+async function poll(){try{S=await api('/api/state?step=0');spawnPulsesLog();side()}catch(e){}}
+function spawnPulsesLog(){
+  for(const[t,fl]of(S.flux_log||[])){
+    S.edges.forEach((e,i)=>{const f=fl[i];if(Math.abs(f)>1e-4)
+      pulses.push({s:e[0],d:e[1],w:f,p:0,dur:18+S.delay[i]*12});});
+  }
+  if(pulses.length>400)pulses=pulses.slice(-400);
+}
+
+function draw(){
+  const W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+  if(!S)return;
+  const N=S.N,P=[];for(let i=0;i<N;i++)P.push(pos(i,N,W,H));
+  // рёбра
+  ctx.lineWidth=1;
+  S.edges.forEach((e,i)=>{
+    const[a,b]=e,[x1,y1]=P[a],[x2,y2]=P[b];
+    const w=S.w[i],exc=w>0;
+    const mx=(x1+x2)/2,my=(y1+y2)/2,dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy)||1;
+    const off=(a<b?1:-1)*L*0.18,cx=mx-dy/L*off,cy=my+dx/L*off;
+    ctx.strokeStyle=exc?'rgba(63,185,80,.35)':'rgba(248,81,73,.35)';
+    ctx.lineWidth=Math.max(0.6,Math.min(4,Math.abs(w)*6));
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.quadraticCurveTo(cx,cy,x2,y2);ctx.stroke();
+    e._cx=cx;e._cy=cy;e._q=[x1,y1,cx,cy,x2,y2];
+  });
+  // импульсы
+  pulses.forEach(p=>{p.p+=1/p.dur;
+    const e=S.edges.find(e=>e[0]===p.s&&e[1]===p.d);if(!e||!e._q)return;
+    const[x1,y1,cx,cy,x2,y2]=e._q,t=Math.min(p.p,1),u=1-t;
+    const x=u*u*x1+2*u*t*cx+t*t*x2,y=u*u*y1+2*u*t*cy+t*t*y2;
+    const r=2+Math.min(6,Math.abs(p.w)*40);
+    ctx.fillStyle=p.w>0?'rgba(63,185,80,.9)':'rgba(248,81,73,.9)';
+    ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();});
+  pulses=pulses.filter(p=>p.p<1);
+  // память
+  S.mem.forEach((m,k)=>{
+    const[x,y]=P[m.node],mx=x+34*Math.cos(k*2.3),my=y+34*Math.sin(k*2.3);
+    ctx.strokeStyle='rgba(188,140,255,.5)';ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(mx,my);ctx.stroke();ctx.setLineDash([]);
+    ctx.save();ctx.translate(mx,my);ctx.rotate(Math.PI/4);
+    const s=5+m.w*14;ctx.fillStyle=m.status?'rgba(188,140,255,.25)':'rgba(188,140,255,.85)';
+    ctx.fillRect(-s/2,-s/2,s,s);ctx.restore();});
+  // узлы
+  const xmax=Math.max(1e-9,...S.x.map(Math.abs));
+  for(let i=0;i<N;i++){
+    const[x,y]=P[i],a=Math.min(1,Math.abs(S.x[i])/xmax);
+    if(S.gws[i]){ctx.strokeStyle='rgba(88,166,255,.9)';ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(x,y,30,0,7);ctx.stroke();}
+    const gg=ctx.createRadialGradient(x,y,2,x,y,26);
+    gg.addColorStop(0,`rgba(88,166,255,${.35+.65*a})`);gg.addColorStop(1,'rgba(88,166,255,.05)');
+    ctx.fillStyle=gg;ctx.beginPath();ctx.arc(x,y,26,0,7);ctx.fill();
+    // толщина обводки ~ g, насечка θ
+    ctx.strokeStyle='rgba(201,209,217,.8)';ctx.lineWidth=Math.max(1,Math.min(5,S.g[i]));
+    ctx.beginPath();ctx.arc(x,y,18,0,7);ctx.stroke();
+    const th=-Math.PI/2+Math.max(-2,Math.min(2,S.theta[i]));
+    ctx.strokeStyle='rgba(255,200,60,.9)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(x,y,18,th,th+.4);ctx.stroke();
+    // K-полоски
+    for(let k=0;k<S.K;k++){const v=S.xk[i][k];
+      ctx.fillStyle=v>=0?'rgba(88,166,255,.85)':'rgba(248,81,73,.7)';
+      ctx.fillRect(x-16+k*9,y+20,7,-Math.max(-14,Math.min(14,v*60)));}
+    ctx.fillStyle='#c9d1d9';ctx.font='11px monospace';ctx.textAlign='center';
+    ctx.fillText('n'+i,x,y-34);}
+}
+function side(){
+  $('phase').textContent=S.phase+(S.inject_left?` +вход(${S.inject_left})`:'');
+  $('phase').className='badge '+(S.phase==='warm'?'warm':'auto');
+  $('tick').textContent='t='+S.t+' · '+(S.rate>0?('live @'+S.rate+' t/s'):'paused')+(S.model==='model_m1.yaml'?' · M1':'');
+  $('run').textContent=S.rate>0?'⏸ live':'▶ resume';
+  const m=S.metrics;
+  $('met').innerHTML=['activity','H','s_ed','rho_j','eps_norm','mean_mu','mean_theta','mean_g','mem_fro','recall','w_fro','gate_frac']
+    .map(k=>`<tr><td>${k}</td><td>${m[k]!==undefined?m[k]:'—'}</td></tr>`).join('');
+  $('nodes').innerHTML=S.x.map((x,i)=>`<tr><td>n${i}</td><td>x=${x.toFixed(3)}</td><td>μ=${S.mu[i].toFixed(3)}</td><td>θ=${S.theta[i].toFixed(3)}</td><td>g=${S.g[i].toFixed(2)}</td></tr>`).join('');
+  $('mem').innerHTML=S.mem.length?S.mem.map((m,k)=>`<tr><td>#${k}@n${m.node}</td><td>w=${m.w}</td><td>age=${m.age}</td><td>${m.status?'архив':''}</td></tr>`).join(''):'<tr><td>∅</td></tr>';
+  // sparkline
+  const h=S.hist;sctx.clearRect(0,0,310,80);
+  if(h.length>1){
+    const mxA=Math.max(1e-9,...h.map(p=>Math.abs(p.activity||0))),mxH=Math.max(1e-9,...h.map(p=>p.H||0));
+    const line=(f,mx,col)=>{sctx.strokeStyle=col;sctx.beginPath();
+      h.forEach((p,i)=>{const x=i/(h.length-1)*310,y=78-(f(p)/mx)*74;i?sctx.lineTo(x,y):sctx.moveTo(x,y)});sctx.stroke();};
+    line(p=>Math.abs(p.activity||0),mxA,'#58a6ff');line(p=>p.H||0,mxH,'#bc8cff');}
+}
+
+function anim(){draw();requestAnimationFrame(anim)}
+$('run').onclick=async()=>{await api('/api/rate',{rate:S&&S.rate>0?0:+$('speed').value});};
+$('speed').oninput=e=>{$('rate').textContent=e.target.value+' t/s';api('/api/rate',{rate:+e.target.value})};
+document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>step(+b.dataset.step));
+document.querySelectorAll('.inj').forEach(b=>b.onclick=()=>api('/api/inject',{word:b.dataset.w,dur:20}));
+$('auto').onchange=e=>api('/api/scenario',{auto:e.target.checked});
+$('reset').onclick=async()=>{await api('/api/reset',{eta_plast:+$('eta').value,Lambda:+$('lam').value,eta_g:+$('etag').value});pulses=[];S=await api('/api/state?step=0');side();};
+
+fit();(async()=>{S=await api('/api/state?step=0');side();anim();setInterval(poll,120)})();
+</script>
+</body>
+</html>

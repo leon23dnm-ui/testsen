@@ -9,7 +9,7 @@ from torch import nn
 
 # Служебные токены первыми: pad=0, bos=1, eos=2
 SPECIAL = ["<pad>", "<bos>", "<eos>"]
-CHARS = list("0123456789+-*/=.? ")
+CHARS = list("0123456789+-*/×÷=.? ")
 VOCAB = SPECIAL + CHARS
 stoi = {c: i for i, c in enumerate(VOCAB)}
 itos = {i: c for c, i in stoi.items()}

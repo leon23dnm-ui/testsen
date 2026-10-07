@@ -1,37 +1,40 @@
 #!/usr/bin/env python3
-"""M0 falsification run V1."""
+"""M1 falsification run: масштабирование канона (N=16, K=8, D=64).
+
+Та же семантика, те же 6 критериев и пороги; отличается только
+размерность из config/model_m1.yaml. Пишет в experiments/m1/{logs,plots}
+и experiments/m1/REPORT_M1.md — канонический REPORT.md не трогает.
+"""
 
 import argparse
 import sys
 import types
 from pathlib import Path
 
+import matplotlib
 import numpy as np
 import yaml
 
-import matplotlib
-
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.pyplot as plt
 
 from iski.encoders.hash_text import encode_text
-from iski.runtime.bootstrap import bootstrap  # noqa: E402
-from iski.runtime.pipeline import Pipeline  # noqa: E402
+from iski.runtime.bootstrap import bootstrap
+from iski.runtime.pipeline import Pipeline
 
 WORDS = ["one", "two", "three", "four"]
 
 
 def make_cfg(root: Path) -> types.SimpleNamespace:
-    with open(root / "config" / "model.yaml", encoding="utf-8") as f:
+    with open(root / "config" / "model_m1.yaml", encoding="utf-8") as f:
         model = yaml.safe_load(f)
     with open(root / "config" / "runtime.yaml", encoding="utf-8") as f:
         runtime = yaml.safe_load(f)
     with open(root / "config" / "bootstrap.yaml", encoding="utf-8") as f:
-        bootstrap = yaml.safe_load(f)
-    with open(root / "config" / "experiments" / "m0.yaml", encoding="utf-8") as f:
+        boot = yaml.safe_load(f)
+    with open(root / "config" / "experiments" / "m1.yaml", encoding="utf-8") as f:
         experiment = yaml.safe_load(f)
-
-    return types.SimpleNamespace(**model, **runtime, **bootstrap, **experiment)
+    return types.SimpleNamespace(**model, **runtime, **boot, **experiment)
 
 
 DIAG_KEYS = (
@@ -80,9 +83,19 @@ def _write_log(path: Path, log) -> None:
 
 
 def _plot_traj(path: Path, log, tag: str) -> None:
-    series = ("w_fro", "wm_fro", "mask_frac", "gate_frac", "s_ed", "h_norm", "node_spread")
+    series = (
+        "w_fro",
+        "wm_fro",
+        "mask_frac",
+        "gate_frac",
+        "s_ed",
+        "h_norm",
+        "node_spread",
+    )
     ts = [t for t, _, _ in log]
-    fig, axes = plt.subplots(len(series), 1, figsize=(8, 2.2 * len(series)), sharex=True)
+    fig, axes = plt.subplots(
+        len(series), 1, figsize=(8, 2.2 * len(series)), sharex=True
+    )
     for ax, k in zip(axes, series, strict=True):
         ax.plot(ts, [m.get(k, float("nan")) for _, m, _ in log])
         ax.set_ylabel(k)
@@ -108,7 +121,11 @@ def _tail_stats(log, keys, window: int = 100) -> dict:
 
 
 def run_combo(
-    pipeline: Pipeline, cfg: types.SimpleNamespace, eta_plast: float, Lambda: float, eta_g: float
+    pipeline: Pipeline,
+    cfg: types.SimpleNamespace,
+    eta_plast: float,
+    Lambda: float,
+    eta_g: float,
 ):
     cfg.eta_plast = eta_plast
     cfg.Lambda = Lambda
@@ -151,7 +168,6 @@ def run_combo(
         ]
         diag[k] = float(np.mean(vals)) if vals else float("nan")
 
-    # сводка петли гомеостаза: g_end, mu_end, theta_end, w_row, g*w_row
     last_m = logged[-1]
     graph = pipeline.state.graph
     W = np.zeros((cfg.N, cfg.N))
@@ -172,7 +188,12 @@ def run_combo(
         "rho_stable": rho_stable,
         "no_recovery": no_recovery,
         "nontrivial": nontrivial,
-        "pass": warm_ok and activity_band and entropy_band and rho_stable and no_recovery and nontrivial,
+        "pass": warm_ok
+        and activity_band
+        and entropy_band
+        and rho_stable
+        and no_recovery
+        and nontrivial,
         "diag": diag,
         "log": list(pipeline.log),
         "homeo": homeo,
@@ -186,8 +207,8 @@ def main():
     root = Path(__file__).resolve().parents[2]
     cfg = make_cfg(root)
 
-    logs_dir = root / "experiments" / "m0" / "logs"
-    plots_dir = root / "experiments" / "m0" / "plots"
+    logs_dir = root / "experiments" / "m1" / "logs"
+    plots_dir = root / "experiments" / "m1" / "plots"
     logs_dir.mkdir(parents=True, exist_ok=True)
     plots_dir.mkdir(parents=True, exist_ok=True)
 
@@ -197,22 +218,39 @@ def main():
             for eta_g in cfg.sweep["eta_g"]:
                 pipeline = bootstrap(cfg)
                 result = run_combo(pipeline, cfg, eta_plast, Lambda, eta_g)
-                tag = f"eta{eta_plast}_L{Lambda}_etag{eta_g}"
+                tag = f"m1_eta{eta_plast}_L{Lambda}_etag{eta_g}"
                 _write_log(logs_dir / f"{tag}.csv", result["log"])
                 _plot_traj(plots_dir / f"{tag}.png", result["log"], tag)
                 rows.append((eta_plast, Lambda, eta_g, result))
     found = any(r["pass"] for _, _, _, r in rows)
-
     verdict = "НАЙДЕН" if found else "НЕ НАЙДЕН"
 
-    lines = ["| combo | warm_ok | activity_band | entropy_band | rho_stable | no_recovery | nontrivial | pass |"]
-    lines.append("|-------|---------|---------------|--------------|------------|-------------|------------|------|")
+    crit = (
+        "warm_ok",
+        "activity_band",
+        "entropy_band",
+        "rho_stable",
+        "no_recovery",
+        "nontrivial",
+        "pass",
+    )
+    lines = [
+        f"# REPORT M1 — масштабирование канона (N={cfg.N}, K={cfg.K}, D={cfg.D})",
+        "",
+        f"**Вердикт: {verdict}**",
+        "",
+        "Семантика M0 и все пороги/критерии без изменений; отличается только",
+        "размерность (config/model_m1.yaml). Канонический REPORT.md не затрагивается.",
+        "",
+        "| combo | " + " | ".join(crit) + " |",
+        "|-------|" + "|".join(["---"] * len(crit)) + "|",
+    ]
     for eta_plast, Lambda, eta_g, r in rows:
         combo = f"eta={eta_plast}, Lambda={Lambda}, eta_g={eta_g}"
-        cells = [combo] + ["x" if r[k] else " " for k in ("warm_ok", "activity_band", "entropy_band", "rho_stable", "no_recovery", "nontrivial", "pass")]
+        cells = [combo] + ["x" if r[k] else " " for k in crit]
         lines.append("| " + " | ".join(cells) + " |")
 
-    diag_lines = [
+    lines += [
         "",
         "## Диагностика (лог тика, среднее по тикам)",
         "",
@@ -222,9 +260,9 @@ def main():
     for eta_plast, Lambda, eta_g, r in rows:
         combo = f"eta={eta_plast}, Lambda={Lambda}, eta_g={eta_g}"
         cells = [combo] + [f"{r['diag'][k]:.4f}" for k in DIAG_KEYS]
-        diag_lines.append("| " + " | ".join(cells) + " |")
+        lines.append("| " + " | ".join(cells) + " |")
 
-    obs_lines = [
+    lines += [
         "",
         "## Наблюдения (диагностика, среднее по последним 100 тикам)",
         "",
@@ -235,10 +273,9 @@ def main():
         combo = f"eta={eta_plast}, Lambda={Lambda}, eta_g={eta_g}"
         obs = _tail_stats(r["log"], OBS_KEYS)
         cells = [combo] + [f"{obs[k]:.4f}" for k in OBS_KEYS]
-        obs_lines.append("| " + " | ".join(cells) + " |")
-    diag_lines += obs_lines
+        lines.append("| " + " | ".join(cells) + " |")
 
-    homeo_lines = [
+    lines += [
         "",
         "## Петля гомеостаза (конец прогона)",
         "",
@@ -258,15 +295,10 @@ def main():
             f"{h['gw_row']:.4f}",
             loop,
         ]
-        homeo_lines.append("| " + " | ".join(cells) + " |")
-    diag_lines += homeo_lines
+        lines.append("| " + " | ".join(cells) + " |")
 
-    report_path = root / "REPORT.md"
-    template = (root / "experiments" / "m0" / "REPORT.template.md").read_text(encoding="utf-8")
-    table = "\n".join(lines)
-    text = template.replace("<!-- ROWS -->", table).replace("{{VERDICT}}", verdict)
-    text += "\n".join(diag_lines) + "\n"
-    report_path.write_text(text, encoding="utf-8")
+    report_path = root / "experiments" / "m1" / "REPORT_M1.md"
+    report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     print(verdict)
     sys.exit(0 if found else 1)

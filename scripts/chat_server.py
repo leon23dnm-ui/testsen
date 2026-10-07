@@ -74,15 +74,14 @@ def answer(message: str) -> dict:
         if tail and all(ch in "0123456789.-" for ch in tail):
             model_text = tail
     ms = (time.perf_counter() - t0) * 1000
-    if model_text is not None and model_text == gold:
-        reply = f"{fmt_expr(a, op, b)} = {gold}"
-        source = "модель ✓ (совпало с эталоном)"
-    elif model_text is not None:
-        reply = f"{fmt_expr(a, op, b)} = {gold}"
-        source = f"эталон (модель ответила '{model_text}' — исправлено)"
-    else:
-        reply = f"{fmt_expr(a, op, b)} = {gold}"
-        source = "эталонный калькулятор"
+    shown = model_text if model_text is not None else "—"
+    mark = "✓" if model_text == gold else "✗"
+    reply = f"{fmt_expr(a, op, b)}:  модель «{shown}» {mark}   |   эталон «{gold}»"
+    source = (
+        "генеративная модель"
+        if model_text is not None
+        else "модель молчит — только эталон"
+    )
     return {"reply": reply, "source": source, "ms": round(ms, 1)}
 
 
