@@ -85,29 +85,42 @@ def fmt_expr(a: float, op: str, b: float) -> str:
 
 
 def build_corpus(
-    n: int = 6000, seed: int = 7, max_digits: int = 2, ops: str = "+-*/"
+    n: int = 6000,
+    seed: int = 7,
+    max_digits: int = 2,
+    ops: str = "+-*/",
+    edge_frac: float = 0.15,
 ) -> list[tuple[str, str]]:
     """Корпус (вопрос, ответ-строка). Ответ содержит '=результат' в конце.
 
     ops — подмножество операций для обучения (напр. '+-' — без ×/÷).
+    edge_frac — доля краевых случаев (нули, равные операнды, переносы/заёмы,
+    отрицательные результаты), которых мало при равномерной выборке.
     """
     rng = random.Random(seed)
     seen: set[tuple] = set()
     variants: list[tuple[str, str]] = []
 
     hi = 10**max_digits
+    edge_pool = _edge_pool(rng, hi, ops, int(n * edge_frac) * 6)
+    rng.shuffle(edge_pool)
+    edge_quota = int(n * edge_frac)
+
     tries = 0
-    while len(seen) < n and tries < n * 20:
+    while len(seen) < n and tries < n * 30:
         tries += 1
-        op = rng.choice(list(ops))
-        if op == "/":
-            b = rng.randint(1, 12)
-            a = b * rng.randint(0, (hi - 1) // b)  # делимость без остатка
+        if edge_pool and len(seen) >= n - edge_quota:
+            a, op, b = edge_pool.pop()
         else:
-            a = rng.randint(0, hi - 1)
-            b = rng.randint(0, hi - 1)
-            if op == "-" and rng.random() < 0.5:
-                a, b = max(a, b), min(a, b)  # чаще неотрицательный результат
+            op = rng.choice(list(ops))
+            if op == "/":
+                b = rng.randint(1, 12)
+                a = b * rng.randint(0, (hi - 1) // b)  # делимость без остатка
+            else:
+                a = rng.randint(0, hi - 1)
+                b = rng.randint(0, hi - 1)
+                if op == "-" and rng.random() < 0.5:
+                    a, b = max(a, b), min(a, b)  # чаще неотрицательный результат
         key = (a, op, b)
         if key in seen:
             continue
@@ -123,8 +136,29 @@ def build_corpus(
             f"{expr}? ответ",
             f"посчитай {expr}",
             f"{expr} равно чему?",
+            f"вычисли {expr}",
+            f"реши {expr}",
+            expr,
         ]
         variants.append((rng.choice(phrasings), resp))
 
     rng.shuffle(variants)
     return variants[:n]
+
+
+def _edge_pool(rng: random.Random, hi: int, ops: str, k: int) -> list[tuple]:
+    """Ключи краевых случаев: нули, равные операнды, переносы, заёмы, a<b для '-'."""
+    pool: list[tuple] = []
+    for a in range(hi):
+        for op in ops:
+            pool.append((a, op, 0))
+            pool.append((0, op, a))
+            pool.append((a, op, a))
+    for _ in range(k):
+        a, b = rng.randint(0, hi - 1), rng.randint(0, hi - 1)
+        op = rng.choice(list(ops))
+        carry = op == "+" and (a % 10 + b % 10 >= 10 or a + b >= hi)
+        borrow = op == "-" and (a % 10 < b % 10 or a < b)
+        if carry or borrow:
+            pool.append((a, op, b))
+    return pool

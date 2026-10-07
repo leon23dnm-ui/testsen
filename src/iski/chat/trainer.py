@@ -135,6 +135,9 @@ if __name__ == "__main__":
     p.add_argument("--corpus", type=int, default=6000)
     p.add_argument("--epochs", type=int, default=12)
     p.add_argument("--lr", type=float, default=1e-3)
+    p.add_argument("--dim", type=int, default=96)
+    p.add_argument("--layers", type=int, default=3)
+    p.add_argument("--heads", type=int, default=4)
     p.add_argument("--out", default="models/chat_arith.pt")
     p.add_argument("--ops", default="+-*/")
     args = p.parse_args()
@@ -142,6 +145,9 @@ if __name__ == "__main__":
         n_corpus=args.corpus,
         epochs=args.epochs,
         lr=args.lr,
+        dim=args.dim,
+        layers=args.layers,
+        heads=args.heads,
         out_path=args.out,
         ops=args.ops,
     )
