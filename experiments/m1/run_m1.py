@@ -19,10 +19,36 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from iski.encoders.hash_text import encode_text
-from iski.runtime.bootstrap import bootstrap
+from iski.m1.bootstrap import bootstrap_m1
+from iski.m1.growth import grow_node
 from iski.runtime.pipeline import Pipeline
 
-WORDS = ["one", "two", "three", "four"]
+WORDS = [
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "eleven",
+    "twelve",
+    "alpha",
+    "beta",
+    "gamma",
+    "delta",
+    "north",
+    "south",
+    "east",
+    "west",
+    "red",
+    "blue",
+    "green",
+    "gold",
+]
 
 
 def make_cfg(root: Path) -> types.SimpleNamespace:
@@ -58,6 +84,7 @@ LOG_KEYS = DIAG_KEYS + (
     "mean_theta",
     "mem_fro",
     "recall",
+    "n_nodes",
 )
 
 OBS_KEYS = (
@@ -132,10 +159,16 @@ def run_combo(
     cfg.eta_g = eta_g
 
     s_ed = []
+    last_grow = -(10**9)
     for t in range(cfg.warm_ticks):
         word = WORDS[t % len(WORDS)]
         e_in = encode_text(word, cfg.D, seed=cfg.seeds["boot"] + t)
+        pipeline.head.sync(pipeline.state)
         out = pipeline.tick(e_in, 1.0)
+        out["metrics"]["n_nodes"] = float(pipeline.state.X.shape[0])
+        last_grow = grow_node(
+            pipeline.state, cfg, e_in, t, last_grow, cfg.grow_cooldown, pipeline
+        )
         s_ed.append(out["metrics"]["s_ed"])
         if t > 0 and t % cfg.T_maint == 0:
             pipeline.maintenance()
@@ -145,7 +178,9 @@ def run_combo(
 
     activities, entropies, rho_js, viols = [], [], [], []
     for _ in range(cfg.auto_ticks):
+        pipeline.head.sync(pipeline.state)
         out = pipeline.tick(None, 0.0)
+        out["metrics"]["n_nodes"] = float(pipeline.state.X.shape[0])
         m = out["metrics"]
         activities.append(m["activity"])
         entropies.append(m["H"])
@@ -170,7 +205,8 @@ def run_combo(
 
     last_m = logged[-1]
     graph = pipeline.state.graph
-    W = np.zeros((cfg.N, cfg.N))
+    n_now = pipeline.state.X.shape[0]
+    W = np.zeros((n_now, n_now))
     W[graph.edge_index[0], graph.edge_index[1]] += graph.w_eff()
     w_row = float(W.sum(axis=1).mean())
     homeo = {
@@ -197,6 +233,7 @@ def run_combo(
         "diag": diag,
         "log": list(pipeline.log),
         "homeo": homeo,
+        "n_end": float(pipeline.state.X.shape[0]),
     }
 
 
@@ -216,7 +253,7 @@ def main():
     for eta_plast in cfg.sweep["eta_plast"]:
         for Lambda in cfg.sweep["Lambda"]:
             for eta_g in cfg.sweep["eta_g"]:
-                pipeline = bootstrap(cfg)
+                pipeline = bootstrap_m1(cfg)
                 result = run_combo(pipeline, cfg, eta_plast, Lambda, eta_g)
                 tag = f"m1_eta{eta_plast}_L{Lambda}_etag{eta_g}"
                 _write_log(logs_dir / f"{tag}.csv", result["log"])
@@ -235,12 +272,22 @@ def main():
         "pass",
     )
     lines = [
-        f"# REPORT M1 — масштабирование канона (N={cfg.N}, K={cfg.K}, D={cfg.D})",
+        f"# REPORT M1 — динамический рост (N: {cfg.N}→{cfg.N_max}, K={cfg.K}, D={cfg.D})",
         "",
         f"**Вердикт: {verdict}**",
         "",
-        "Семантика M0 и все пороги/критерии без изменений; отличается только",
-        "размерность (config/model_m1.yaml). Канонический REPORT.md не затрагивается.",
+        "Семантика тика M0 и все пороги/критерии без изменений; M1 добавляет",
+        "нейрогенез: вход, не удержанный памятью (|M|=M_max, Novelty>theta_form),",
+        "рекрутирует новый узел (E_new=e_in). Канонический REPORT.md не затрагивается.",
+        "",
+        "| combo | N_end |",
+        "|-------|-------|",
+    ]
+    for eta_plast, Lambda, eta_g, r in rows:
+        lines.append(
+            f"| eta={eta_plast}, Lambda={Lambda}, eta_g={eta_g} | {int(r['n_end'])} |"
+        )
+    lines += [
         "",
         "| combo | " + " | ".join(crit) + " |",
         "|-------|" + "|".join(["---"] * len(crit)) + "|",

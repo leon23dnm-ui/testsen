@@ -16,3 +16,4 @@
 | MSG-20261007-180000-deviant-desktop-viz-server | deviant-desktop→coder | status | normal | open | — | viz_server, iski/viz, test_viz_server |
 | MSG-20261007-190000-deviant-desktop-m1-scaling | deviant-desktop→coder | status | normal | open | — | model_m1, run_m1, viz_server --model |
 | MSG-20261007-200000-deviant-desktop-chat-pm | deviant-desktop→coder | status | normal | open | — | chat ops-param + exact_answer b=0 fix |
+| MSG-20261007-210000-deviant-desktop-m1-growth | deviant-desktop→coder | status | normal | open | — | iski/m1 neurogenesis, PaddedPredHead, run_m1 growth |

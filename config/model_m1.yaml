@@ -1,6 +1,8 @@
-N: 16
+N: 4
 D: 64
 K: 8
+N_max: 32
+grow_cooldown: 50
 Dmax: 8
 Lambda: 0.3
 kappa: 1.0

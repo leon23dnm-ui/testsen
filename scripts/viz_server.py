@@ -30,6 +30,8 @@ import yaml
 
 from iski.core.kernels import kernel_similarity
 from iski.encoders.hash_text import encode_text
+from iski.m1.bootstrap import bootstrap_m1
+from iski.m1.growth import grow_node
 from iski.runtime.bootstrap import bootstrap
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
@@ -37,6 +39,28 @@ HTML_PATH = os.path.join(
     os.path.dirname(__file__), "..", "src", "iski", "viz", "web", "index.html"
 )
 WORDS = ["one", "two", "three", "four"]
+WORDS_M1 = WORDS + [
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "eleven",
+    "twelve",
+    "alpha",
+    "beta",
+    "gamma",
+    "delta",
+    "north",
+    "south",
+    "east",
+    "west",
+    "red",
+    "blue",
+    "green",
+    "gold",
+]
 HIST_LEN = 400
 
 
@@ -66,10 +90,15 @@ class Engine:
         self.cfg.eta_plast = float(eta_plast)
         self.cfg.Lambda = float(Lambda)
         self.cfg.eta_g = float(eta_g)
-        self.pipe = bootstrap(self.cfg)
+        self.pipe = (
+            bootstrap_m1(self.cfg)
+            if hasattr(self.cfg, "N_max")
+            else bootstrap(self.cfg)
+        )
         self.auto = True  # сценарий warm/auto как в run_m0
         self.inject_until = -1
         self.inject_vec = None
+        self.last_grow = -(10**9)
         self.hist = deque(maxlen=HIST_LEN)
         self.last_flux = np.zeros(len(self.pipe.state.graph.w_plus))
         self.flux_log = []  # [(t, flux_list)] с момента последнего snapshot
@@ -81,7 +110,8 @@ class Engine:
         if t <= self.inject_until:
             return self.inject_vec, 1.0
         if self.auto and t < self.cfg.warm_ticks:
-            word = WORDS[t % len(WORDS)]
+            words = WORDS_M1 if hasattr(self.cfg, "N_max") else WORDS
+            word = words[t % len(words)]
             return encode_text(word, self.cfg.D, seed=self.cfg.seeds["boot"] + t), 1.0
         return None, 0.0
 
@@ -101,7 +131,19 @@ class Engine:
         st = self.pipe.state
         self.last_flux = self._edge_flux()
         e_in, conf = self._input_for(st.tick)
+        if hasattr(self.pipe.head, "sync"):
+            self.pipe.head.sync(st)
         out = self.pipe.tick(e_in, conf)
+        if hasattr(self.cfg, "N_max"):
+            self.last_grow = grow_node(
+                self.pipe.state,
+                self.cfg,
+                e_in,
+                st.tick,
+                self.last_grow,
+                self.cfg.grow_cooldown,
+                self.pipe,
+            )
         self.flux_log.append((st.tick, self.last_flux.tolist()))
         if self.pipe.state.tick > 0 and self.pipe.state.tick % self.cfg.T_maint == 0:
             self.pipe.maintenance()
@@ -166,6 +208,7 @@ class Engine:
             "flux_log": self.drain_flux(),
             "rate": self.rate,
             "mem": mem,
+            "n_max": int(getattr(self.cfg, "N_max", N)),
             "gws": [bool(v) for v in (out["gws"] if out else np.zeros(N))],
             "att": [round(float(v), 4) for v in (out["att"] if out else np.zeros(N))],
             "metrics": {
@@ -183,7 +226,8 @@ class Engine:
         return [(t, [round(float(v), 6) for v in fl]) for t, fl in out[-60:]]
 
     def inject(self, word: str, dur: int = 20) -> None:
-        if word not in WORDS:
+        word = (word or "one").strip() or "one"
+        if not hasattr(self.cfg, "N_max") and word not in WORDS:
             word = WORDS[0]
         st = self.pipe.state
         seed = self.cfg.seeds["boot"] + 10000 + st.tick

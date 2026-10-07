@@ -36,21 +36,22 @@ def test_run_m1_creates_report(monkeypatch):
         report.unlink()
 
 
-def test_m1_cfg_scaled_dims():
+def test_m1_cfg_growth_dims():
     root = Path(__file__).resolve().parents[2]
     cfg = run_m1.make_cfg(root)
-    assert (cfg.N, cfg.K, cfg.D) == (16, 8, 64)
-    assert cfg.M_max == 5
+    assert (cfg.N, cfg.K, cfg.D, cfg.N_max) == (4, 8, 64, 32)
+    assert cfg.M_max == 5 and cfg.grow_cooldown == 50
     assert cfg.theta_ed_warm == 0.15
     assert cfg.H_max == 2.5 and cfg.rho_max == 1.5 and cfg.mu_star == 0.1
 
 
-def test_m1_pipeline_runs_scaled():
-    from iski.runtime.bootstrap import bootstrap
+def test_m1_pipeline_runs_growth():
+    from iski.m1.bootstrap import bootstrap_m1
 
     root = Path(__file__).resolve().parents[2]
     cfg = run_m1.make_cfg(root)
-    pipe = bootstrap(cfg)
-    assert pipe.state.X.shape == (16, 8)
+    pipe = bootstrap_m1(cfg)
+    assert pipe.state.X.shape == (4, 8)
+    pipe.head.sync(pipe.state)
     out = pipe.tick(None, 0.0)
     assert "metrics" in out
