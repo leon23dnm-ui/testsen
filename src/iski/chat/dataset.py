@@ -59,9 +59,16 @@ def exact_answer(a: float, op: str, b: float) -> str:
     """Эталонный ответ строкой (или сообщение об ошибке)."""
     if op == "/" and b == 0:
         return "деление на ноль невозможно"
-    if op not in "+-*/":
+    if op == "+":
+        r = a + b
+    elif op == "-":
+        r = a - b
+    elif op == "*":
+        r = a * b
+    elif op == "/":
+        r = a / b
+    else:
         raise ValueError(f"unknown operator: {op!r}")
-    r = {"+": a + b, "-": a - b, "*": a * b, "/": a / b}[op]
     if isinstance(r, float) and r == int(r):
         r = int(r)
     if isinstance(r, float):
@@ -78,9 +85,12 @@ def fmt_expr(a: float, op: str, b: float) -> str:
 
 
 def build_corpus(
-    n: int = 6000, seed: int = 7, max_digits: int = 2
+    n: int = 6000, seed: int = 7, max_digits: int = 2, ops: str = "+-*/"
 ) -> list[tuple[str, str]]:
-    """Корпус (вопрос, ответ-строка). Ответ содержит '=результат' в конце."""
+    """Корпус (вопрос, ответ-строка). Ответ содержит '=результат' в конце.
+
+    ops — подмножество операций для обучения (напр. '+-' — без ×/÷).
+    """
     rng = random.Random(seed)
     seen: set[tuple] = set()
     variants: list[tuple[str, str]] = []
@@ -89,7 +99,7 @@ def build_corpus(
     tries = 0
     while len(seen) < n and tries < n * 20:
         tries += 1
-        op = rng.choice("+-*/")
+        op = rng.choice(list(ops))
         if op == "/":
             b = rng.randint(1, 12)
             a = b * rng.randint(0, (hi - 1) // b)  # делимость без остатка

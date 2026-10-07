@@ -48,6 +48,12 @@ class TestExactAnswer:
         with pytest.raises(ValueError):
             exact_answer(1, "^", 2)
 
+    def test_zero_operand_other_ops(self):
+        # b=0 не должен падать для не-деления (ленивая диспетчеризация)
+        assert exact_answer(5, "+", 0) == "5"
+        assert exact_answer(5, "-", 0) == "5"
+        assert exact_answer(5, "*", 0) == "0"
+
     def test_fmt_expr_symbols(self):
         assert fmt_expr(6, "*", 7) == "6×7"
         assert fmt_expr(9, "/", 3) == "9÷3"
