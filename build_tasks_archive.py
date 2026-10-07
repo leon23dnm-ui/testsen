@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 build_tasks_archive.py — сборщик архива iski-tasks-v3.0:
 файлы-задания (work orders) для Devin Desktop, M0 ядра ISKI (БДКС/LDCS), SPEC v3.0 FROZEN.
@@ -8,6 +7,7 @@ build_tasks_archive.py — сборщик архива iski-tasks-v3.0:
     python3 build_tasks_archive.py          # создать каталог iski-tasks-v3.0/
     python3 build_tasks_archive.py --zip    # дополнительно упаковать iski-tasks-v3.0.zip
 """
+
 from __future__ import annotations
 
 import sys

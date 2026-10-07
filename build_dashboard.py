@@ -72,13 +72,24 @@ def collect_tests() -> dict:
         cls = tc.get("classname", "")
         fname = cls.split(".")[-1] if cls else "?"
         fail_el = tc.find("failure") or tc.find("error")
-        status = "failed" if fail_el is not None else ("skipped" if tc.find("skipped") is not None else "passed")
+        status = (
+            "failed"
+            if fail_el is not None
+            else ("skipped" if tc.find("skipped") is not None else "passed")
+        )
         name = tc.get("name", "")
         t = float(tc.get("time", 0.0))
         cases.append({"file": fname, "name": name, "status": status, "time": t})
         if fail_el is not None:
-            failures.append({"test": f"{cls}::{name}", "trace": fail_el.text or fail_el.get("message", "")})
-        agg = per_file.setdefault(fname, {"file": fname, "passed": 0, "failed": 0, "skipped": 0, "time": 0.0})
+            failures.append(
+                {
+                    "test": f"{cls}::{name}",
+                    "trace": fail_el.text or fail_el.get("message", ""),
+                }
+            )
+        agg = per_file.setdefault(
+            fname, {"file": fname, "passed": 0, "failed": 0, "skipped": 0, "time": 0.0}
+        )
         agg[status] += 1
         agg["time"] += t
     data["cases"] = cases
@@ -103,7 +114,12 @@ def collect_coverage() -> dict:
         )
     modules.sort(key=lambda m: m["pct"])
     t = cov["totals"]
-    return {"total_pct": t["percent_covered"], "stmts": t["num_statements"], "missed": t["missing_lines"], "modules": modules}
+    return {
+        "total_pct": t["percent_covered"],
+        "stmts": t["num_statements"],
+        "missed": t["missing_lines"],
+        "modules": modules,
+    }
 
 
 def collect_ruff() -> dict:
@@ -133,7 +149,9 @@ def collect_report() -> dict:
                 break
             cells = [c.strip() for c in line.strip("|").split("|")]
             marks = [("x" in c.lower()) for c in cells[1:7]]
-            combos.append({"name": cells[0], "marks": marks, "pass": "x" in cells[7].lower()})
+            combos.append(
+                {"name": cells[0], "marks": marks, "pass": "x" in cells[7].lower()}
+            )
     # диагностика (среднее по тикам) -> таблица
     diag_rows, homeo_rows, in_sec = [], [], ""
     for line in text.splitlines():
@@ -146,11 +164,18 @@ def collect_report() -> dict:
                 diag_rows.append(cells)
             elif "Петля гомеостаза" in in_sec:
                 homeo_rows.append(cells)
-    return {"verdict": verdict, "combos": combos, "diag": diag_rows, "homeo": homeo_rows}
+    return {
+        "verdict": verdict,
+        "combos": combos,
+        "diag": diag_rows,
+        "homeo": homeo_rows,
+    }
 
 
 def collect_cfg() -> dict:
-    boot = yaml.safe_load((ROOT / "config" / "bootstrap.yaml").read_text(encoding="utf-8"))
+    boot = yaml.safe_load(
+        (ROOT / "config" / "bootstrap.yaml").read_text(encoding="utf-8")
+    )
     model = yaml.safe_load((ROOT / "config" / "model.yaml").read_text(encoding="utf-8"))
     return {
         "theta_ed_warm": boot.get("theta_ed_warm"),
@@ -196,7 +221,14 @@ def collect_checklist() -> list[dict]:
             continue
         cells = [c.strip() for c in line.strip("|").split("|")]
         if len(cells) >= 3:
-            rows.append({"task": cells[0], "name": cells[1] if len(cells) > 1 else "", "status": cells[2] if len(cells) > 2 else "", "note": cells[-1]})
+            rows.append(
+                {
+                    "task": cells[0],
+                    "name": cells[1] if len(cells) > 1 else "",
+                    "status": cells[2] if len(cells) > 2 else "",
+                    "note": cells[-1],
+                }
+            )
     return rows
 
 
@@ -209,14 +241,20 @@ def esc(s) -> str:
 
 def build_html(tests, cov, ruff, report, cfg, logs_json, checklist) -> str:
     passed = tests["total"] - tests["failures"] - tests["errors"] - tests["skipped"]
-    all_green = tests["failures"] == 0 and tests["errors"] == 0 and ruff["lint_ok"] and ruff["format_ok"]
+    all_green = (
+        tests["failures"] == 0
+        and tests["errors"] == 0
+        and ruff["lint_ok"]
+        and ruff["format_ok"]
+    )
     verdict = report["verdict"]
     n_tasks = len(checklist)
     done_tasks = sum(1 for r in checklist if "x" in r["status"].lower())
 
     failures_html = (
         "".join(
-            f"<div class='failbox'><b>{esc(f['test'])}</b><pre>{esc(f['trace'][:3000])}</pre></div>" for f in tests["failures_detail"]
+            f"<div class='failbox'><b>{esc(f['test'])}</b><pre>{esc(f['trace'][:3000])}</pre></div>"
+            for f in tests["failures_detail"]
         )
         or "<p class='muted'>Падений нет — все тесты зелёные.</p>"
     )
@@ -225,12 +263,12 @@ def build_html(tests, cov, ruff, report, cfg, logs_json, checklist) -> str:
         f"<tr><td><code>{esc(f['file'])}</code></td><td>{f['passed']}</td>"
         f"<td class='{'bad' if f['failed'] else ''}'>{f['failed']}</td>"
         f"<td>{f['skipped']}</td><td>{f['time']:.2f}</td>"
-        f"<td><span class='badge {'pass' if f['failed']==0 else 'fail'}'>{'OK' if f['failed']==0 else 'FAIL'}</span></td></tr>"
+        f"<td><span class='badge {'pass' if f['failed'] == 0 else 'fail'}'>{'OK' if f['failed'] == 0 else 'FAIL'}</span></td></tr>"
         for f in tests["files"]
     )
     cases_rows = "".join(
         f"<tr><td><code>{esc(c['file'])}</code></td><td>{esc(c['name'])}</td>"
-        f"<td><span class='badge {'pass' if c['status']=='passed' else ('fail' if c['status']=='failed' else 'skip')}'>{c['status']}</span></td>"
+        f"<td><span class='badge {'pass' if c['status'] == 'passed' else ('fail' if c['status'] == 'failed' else 'skip')}'>{c['status']}</span></td>"
         f"<td>{c['time']:.3f}</td></tr>"
         for c in tests["cases"]
     )
@@ -257,10 +295,14 @@ def build_html(tests, cov, ruff, report, cfg, logs_json, checklist) -> str:
         ("theta_form", cfg["model"].get("theta_form")),
         ("w_mem_init", cfg["model"].get("w_mem_init")),
     ]
-    thr_rows = "".join(f"<tr><td><code>{k}</code></td><td>{v}</td></tr>" for k, v in thr)
+    thr_rows = "".join(
+        f"<tr><td><code>{k}</code></td><td>{v}</td></tr>" for k, v in thr
+    )
 
     crit_header = "".join(f"<th title='{esc(d)}'>{esc(n)}</th>" for n, d in CRITERIA)
-    crit_defs = "".join(f"<tr><td><code>{esc(n)}</code></td><td>{esc(d)}</td></tr>" for n, d in CRITERIA)
+    crit_defs = "".join(
+        f"<tr><td><code>{esc(n)}</code></td><td>{esc(d)}</td></tr>" for n, d in CRITERIA
+    )
     matrix_rows = "".join(
         f"<tr><td>{esc(c['name'])}</td>"
         + "".join(
@@ -314,14 +356,14 @@ def build_html(tests, cov, ruff, report, cfg, logs_json, checklist) -> str:
 <body>
 <header>
  <h1>ISKI M0 v3.0 — Quality Dashboard</h1>
- <div class="muted">Сгенерирован: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')} · <code>python build_dashboard.py</code></div>
+ <div class="muted">Сгенерирован: {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")} · <code>python build_dashboard.py</code></div>
 </header>
 <div class="cards">
- <div class="card"><div class="v {'ok' if all_green else 'bad'}">{tests['total']}</div><div class="l">Тестов: passed {passed} / failed {tests['failures']+tests['errors']} / skipped {tests['skipped']}</div></div>
- <div class="card"><div class="v">{tests['duration']:.1f}s</div><div class="l">Время прогона pytest</div></div>
- <div class="card"><div class="v {'ok' if cov['total_pct']>=80 else 'bad'}">{cov['total_pct']:.1f}%</div><div class="l">Покрытие ({cov['missed']} строк не покрыто)</div></div>
- <div class="card"><div class="v"><span class="{'ok' if ruff['lint_ok'] else 'bad'}">lint {'OK' if ruff['lint_ok'] else 'FAIL'}</span></div><div class="l">Ruff format: {'OK' if ruff['format_ok'] else 'ERRORS'}</div></div>
- <div class="card"><div class="v {'ok' if verdict=='НАЙДЕН' else 'bad'}">{'✓' if verdict=='НАЙДЕН' else '✗'}</div><div class="l">Вердикт V1: {verdict}</div></div>
+ <div class="card"><div class="v {"ok" if all_green else "bad"}">{tests["total"]}</div><div class="l">Тестов: passed {passed} / failed {tests["failures"] + tests["errors"]} / skipped {tests["skipped"]}</div></div>
+ <div class="card"><div class="v">{tests["duration"]:.1f}s</div><div class="l">Время прогона pytest</div></div>
+ <div class="card"><div class="v {"ok" if cov["total_pct"] >= 80 else "bad"}">{cov["total_pct"]:.1f}%</div><div class="l">Покрытие ({cov["missed"]} строк не покрыто)</div></div>
+ <div class="card"><div class="v"><span class="{"ok" if ruff["lint_ok"] else "bad"}">lint {"OK" if ruff["lint_ok"] else "FAIL"}</span></div><div class="l">Ruff format: {"OK" if ruff["format_ok"] else "ERRORS"}</div></div>
+ <div class="card"><div class="v {"ok" if verdict == "НАЙДЕН" else "bad"}">{"✓" if verdict == "НАЙДЕН" else "✗"}</div><div class="l">Вердикт V1: {verdict}</div></div>
  <div class="card"><div class="v">{done_tasks}/{n_tasks}</div><div class="l">Задач по CHECKLIST выполнено</div></div>
 </div>
 <div class="tabs">
@@ -336,7 +378,7 @@ def build_html(tests, cov, ruff, report, cfg, logs_json, checklist) -> str:
  <h2>Падения тестов</h2>{failures_html}
  <h2>По файлам</h2>
  <table><tr><th>Файл</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Время, с</th><th>Статус</th></tr>{files_rows}</table>
- <h2>Все тест-кейсы ({tests['total']})</h2>
+ <h2>Все тест-кейсы ({tests["total"]})</h2>
  <table><tr><th>Файл</th><th>Тест</th><th>Статус</th><th>Время, с</th></tr>{cases_rows}</table>
 </div>
 
@@ -350,7 +392,7 @@ def build_html(tests, cov, ruff, report, cfg, logs_json, checklist) -> str:
   <div><h2>Определения критериев</h2><table><tr><th>Критерий</th><th>Условие</th></tr>{crit_defs}</table></div>
   <div><h2>Канонические пороги (config)</h2><table><tr><th>Параметр</th><th>Значение</th></tr>{thr_rows}</table></div>
  </div>
- <h2>Матрица sweep ({len(report['combos'])} комбо x {len(CRITERIA)} критериев) — вердикт: {verdict}</h2>
+ <h2>Матрица sweep ({len(report["combos"])} комбо x {len(CRITERIA)} критериев) — вердикт: {verdict}</h2>
  <table><tr><th>combo</th>{crit_header}<th>pass</th></tr>{matrix_rows}</table>
 </div>
 
@@ -366,7 +408,7 @@ def build_html(tests, cov, ruff, report, cfg, logs_json, checklist) -> str:
  <table><tr><th>T</th><th>Задача</th><th>Статус</th><th>Заметки/issues</th></tr>{task_rows}</table>
 </div>
 
-<footer class="muted">{'Все проверки зелёные: тесты пройдены, линтер чистый.' if all_green else 'Есть падения — см. вкладку «Тесты и ошибки».'} Вердикт V1: {verdict}.</footer>
+<footer class="muted">{"Все проверки зелёные: тесты пройдены, линтер чистый." if all_green else "Есть падения — см. вкладку «Тесты и ошибки»."} Вердикт V1: {verdict}.</footer>
 
 <script>
 const LOGS = {json.dumps(logs_json)};
@@ -422,9 +464,14 @@ def main() -> int:
     passed = tests["total"] - tests["failures"] - tests["errors"] - tests["skipped"]
     all_green = tests["failures"] == 0 and tests["errors"] == 0 and ruff["lint_ok"]
     out = DASH / "index.html"
-    out.write_text(build_html(tests, cov, ruff, report, cfg, logs_json, checklist), encoding="utf-8")
+    out.write_text(
+        build_html(tests, cov, ruff, report, cfg, logs_json, checklist),
+        encoding="utf-8",
+    )
     print(f"Дашборд записан: {out} ({len(logs_json)} csv-серий)")
-    print(f"Итог: {passed}/{tests['total']} passed, coverage {cov['total_pct']:.1f}%, ruff {'clean' if ruff['lint_ok'] else 'FAIL'}")
+    print(
+        f"Итог: {passed}/{tests['total']} passed, coverage {cov['total_pct']:.1f}%, ruff {'clean' if ruff['lint_ok'] else 'FAIL'}"
+    )
     return 0 if all_green else 1
 
 

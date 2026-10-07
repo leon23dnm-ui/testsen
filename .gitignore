@@ -18,6 +18,9 @@ dist/
 logs/
 *.log
 
+# Generated experiment plots
+plots/
+
 make_dl.zip
 iski-m0-v3.0.tar.gz
 iski-m0-v3.0.tar.gz.sha256
