@@ -6,16 +6,17 @@ import sys
 import types
 from pathlib import Path
 
-import matplotlib
 import numpy as np
 import yaml
 
+import matplotlib
+
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa: E402
 
 from iski.encoders.hash_text import encode_text
-from iski.runtime.bootstrap import bootstrap
-from iski.runtime.pipeline import Pipeline
+from iski.runtime.bootstrap import bootstrap  # noqa: E402
+from iski.runtime.pipeline import Pipeline  # noqa: E402
 
 WORDS = ["one", "two", "three", "four"]
 
@@ -79,19 +80,9 @@ def _write_log(path: Path, log) -> None:
 
 
 def _plot_traj(path: Path, log, tag: str) -> None:
-    series = (
-        "w_fro",
-        "wm_fro",
-        "mask_frac",
-        "gate_frac",
-        "s_ed",
-        "h_norm",
-        "node_spread",
-    )
+    series = ("w_fro", "wm_fro", "mask_frac", "gate_frac", "s_ed", "h_norm", "node_spread")
     ts = [t for t, _, _ in log]
-    fig, axes = plt.subplots(
-        len(series), 1, figsize=(8, 2.2 * len(series)), sharex=True
-    )
+    fig, axes = plt.subplots(len(series), 1, figsize=(8, 2.2 * len(series)), sharex=True)
     for ax, k in zip(axes, series, strict=True):
         ax.plot(ts, [m.get(k, float("nan")) for _, m, _ in log])
         ax.set_ylabel(k)
@@ -117,11 +108,7 @@ def _tail_stats(log, keys, window: int = 100) -> dict:
 
 
 def run_combo(
-    pipeline: Pipeline,
-    cfg: types.SimpleNamespace,
-    eta_plast: float,
-    Lambda: float,
-    eta_g: float,
+    pipeline: Pipeline, cfg: types.SimpleNamespace, eta_plast: float, Lambda: float, eta_g: float
 ):
     cfg.eta_plast = eta_plast
     cfg.Lambda = Lambda
@@ -185,12 +172,7 @@ def run_combo(
         "rho_stable": rho_stable,
         "no_recovery": no_recovery,
         "nontrivial": nontrivial,
-        "pass": warm_ok
-        and activity_band
-        and entropy_band
-        and rho_stable
-        and no_recovery
-        and nontrivial,
+        "pass": warm_ok and activity_band and entropy_band and rho_stable and no_recovery and nontrivial,
         "diag": diag,
         "log": list(pipeline.log),
         "homeo": homeo,
@@ -223,26 +205,11 @@ def main():
 
     verdict = "НАЙДЕН" if found else "НЕ НАЙДЕН"
 
-    lines = [
-        "| combo | warm_ok | activity_band | entropy_band | rho_stable | no_recovery | nontrivial | pass |"
-    ]
-    lines.append(
-        "|-------|---------|---------------|--------------|------------|-------------|------------|------|"
-    )
+    lines = ["| combo | warm_ok | activity_band | entropy_band | rho_stable | no_recovery | nontrivial | pass |"]
+    lines.append("|-------|---------|---------------|--------------|------------|-------------|------------|------|")
     for eta_plast, Lambda, eta_g, r in rows:
         combo = f"eta={eta_plast}, Lambda={Lambda}, eta_g={eta_g}"
-        cells = [combo] + [
-            "x" if r[k] else " "
-            for k in (
-                "warm_ok",
-                "activity_band",
-                "entropy_band",
-                "rho_stable",
-                "no_recovery",
-                "nontrivial",
-                "pass",
-            )
-        ]
+        cells = [combo] + ["x" if r[k] else " " for k in ("warm_ok", "activity_band", "entropy_band", "rho_stable", "no_recovery", "nontrivial", "pass")]
         lines.append("| " + " | ".join(cells) + " |")
 
     diag_lines = [
@@ -295,9 +262,7 @@ def main():
     diag_lines += homeo_lines
 
     report_path = root / "REPORT.md"
-    template = (root / "experiments" / "m0" / "REPORT.template.md").read_text(
-        encoding="utf-8"
-    )
+    template = (root / "experiments" / "m0" / "REPORT.template.md").read_text(encoding="utf-8")
     table = "\n".join(lines)
     text = template.replace("<!-- ROWS -->", table).replace("{{VERDICT}}", verdict)
     text += "\n".join(diag_lines) + "\n"

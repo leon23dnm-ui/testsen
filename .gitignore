@@ -1,17 +1,13 @@
 .venv/
 .tools/
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
 *.egg-info/
-.eggs/
 .pytest_cache/
 .ruff_cache/
 build/
 dist/
-
-# Coverage
-.coverage
 
 # Environment variables
 .env
@@ -21,14 +17,7 @@ dist/
 # Logs (including experiment logs)
 logs/
 *.log
-/tmp/
-
-# Model checkpoints
-models/*.pt
 
 make_dl.zip
 iski-m0-v3.0.tar.gz
 iski-m0-v3.0.tar.gz.sha256
-
-# Generated plots
-experiments/m0/plots/
